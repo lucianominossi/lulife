@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { updateIncome, updateTransaction } from "@/app/actions";
 import {
+  addMonths,
   currentYearMonth,
+  dateToYearMonth,
+  invoiceMonthFromDate,
   yearMonthOptions,
   yearMonthToLabel,
 } from "@/lib/dates";
@@ -34,6 +37,14 @@ type IncomeRecord = {
   categoryId: string | null;
 };
 
+function inferFaturaClosed(date: string | null, invoices?: string[]) {
+  if (!date || !invoices?.length) return false;
+  const purchaseYm = dateToYearMonth(date);
+  if (!purchaseYm) return false;
+  const expectedClosed = addMonths(purchaseYm, 2);
+  return invoices[0] === expectedClosed;
+}
+
 export function EditTransactionButton({
   record,
   categories,
@@ -45,15 +56,29 @@ export function EditTransactionButton({
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState(record.method);
-  const monthChoices = yearMonthOptions(
-    record.yearMonth || currentYearMonth(),
+  const [date, setDate] = useState(record.date ?? "");
+  const [faturaClosed, setFaturaClosed] = useState(
+    inferFaturaClosed(record.date, record.invoices),
   );
+
+  const invoicePreview = useMemo(() => {
+    if (!date || method !== "credit") return null;
+    return invoiceMonthFromDate(date, faturaClosed);
+  }, [date, faturaClosed, method]);
+
+  const creditCards = accounts.filter((a) => a.type === "credit_card");
+  const bankAccounts = accounts.filter((a) => a.type === "bank");
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setMethod(record.method);
+          setDate(record.date ?? "");
+          setFaturaClosed(inferFaturaClosed(record.date, record.invoices));
+          setOpen(true);
+        }}
         className="text-xs text-[var(--color-brand)] hover:underline"
       >
         editar
@@ -85,6 +110,17 @@ export function EditTransactionButton({
               defaultValue={String(record.amount)}
             />
             <label className="block space-y-1 text-sm">
+              <span className="text-[var(--color-ink-muted)]">Data</span>
+              <input
+                name="date"
+                type="date"
+                required
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input-field"
+              />
+            </label>
+            <label className="block space-y-1 text-sm">
               <span className="text-[var(--color-ink-muted)]">Método</span>
               <select
                 name="method"
@@ -112,70 +148,47 @@ export function EditTransactionButton({
                   label="Cartão"
                   name="accountId"
                   defaultValue={record.accountId ?? ""}
-                  options={accounts
-                    .filter((a) => a.type === "credit_card")
-                    .map((a) => ({ value: a.id, label: a.name }))}
-                />
-                <label className="block space-y-1 text-sm sm:col-span-2">
-                  <span className="text-[var(--color-ink-muted)]">
-                    Faturas (Cmd/Ctrl para várias)
-                  </span>
-                  <select
-                    name="invoices"
-                    multiple
-                    required
-                    defaultValue={
-                      record.invoices?.length
-                        ? record.invoices
-                        : [currentYearMonth()]
-                    }
-                    className="input-field h-36"
-                  >
-                    {monthChoices.map((ym) => (
-                      <option key={ym} value={ym}>
-                        {yearMonthToLabel(ym)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </>
-            ) : (
-              <>
-                <label className="block space-y-1 text-sm">
-                  <span className="text-[var(--color-ink-muted)]">
-                    Mês do gasto
-                  </span>
-                  <select
-                    name="yearMonth"
-                    required
-                    defaultValue={record.yearMonth || currentYearMonth()}
-                    className="input-field"
-                  >
-                    {monthChoices.map((ym) => (
-                      <option key={ym} value={ym}>
-                        {yearMonthToLabel(ym)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <Select
-                  label="Conta (opcional)"
-                  name="accountId"
-                  optional
-                  defaultValue={record.accountId ?? ""}
-                  options={accounts.map((a) => ({
+                  options={creditCards.map((a) => ({
                     value: a.id,
                     label: a.name,
                   }))}
                 />
+                <label className="flex items-start gap-2 rounded-xl border border-[var(--color-border)] px-3 py-3 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    name="faturaClosed"
+                    checked={faturaClosed}
+                    onChange={(e) => setFaturaClosed(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Fatura já fechada
+                    <span className="mt-0.5 block text-xs text-[var(--color-ink-muted)]">
+                      Atribui à fatura do mês seguinte ao próximo
+                    </span>
+                  </span>
+                </label>
+                {invoicePreview && (
+                  <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)] sm:col-span-2">
+                    Fatura/mês:{" "}
+                    <strong className="text-[var(--color-ink)]">
+                      {yearMonthToLabel(invoicePreview)}
+                    </strong>
+                  </p>
+                )}
               </>
+            ) : (
+              <Select
+                label="Conta (opcional)"
+                name="accountId"
+                optional
+                defaultValue={record.accountId ?? ""}
+                options={bankAccounts.map((a) => ({
+                  value: a.id,
+                  label: a.name,
+                }))}
+              />
             )}
-            <Field
-              label="Data"
-              name="date"
-              type="date"
-              defaultValue={record.date ?? ""}
-            />
             <Field
               label="Obs."
               name="notes"
@@ -201,7 +214,8 @@ export function EditIncomeButton({
   accounts: Account[];
 }) {
   const [open, setOpen] = useState(false);
-  const monthChoices = yearMonthOptions(record.yearMonth);
+  const monthChoices = yearMonthOptions(record.yearMonth || currentYearMonth());
+  const bankAccounts = accounts.filter((a) => a.type === "bank");
 
   return (
     <>
@@ -266,7 +280,10 @@ export function EditIncomeButton({
               name="accountId"
               optional
               defaultValue={record.accountId ?? ""}
-              options={accounts.map((a) => ({ value: a.id, label: a.name }))}
+              options={bankAccounts.map((a) => ({
+                value: a.id,
+                label: a.name,
+              }))}
             />
             <Field
               label="Data"
@@ -358,7 +375,12 @@ function Select({
   return (
     <label className="block space-y-1 text-sm">
       <span className="text-[var(--color-ink-muted)]">{label}</span>
-      <select name={name} className="input-field" defaultValue={defaultValue}>
+      <select
+        name={name}
+        className="input-field"
+        defaultValue={defaultValue}
+        required={!optional}
+      >
         {optional && <option value="">—</option>}
         {!optional && !defaultValue && (
           <option value="" disabled>

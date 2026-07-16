@@ -14,7 +14,11 @@ import {
   transactions,
 } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { currentYearMonth } from "@/lib/dates";
+import {
+  currentYearMonth,
+  dateToYearMonth,
+  invoiceMonthFromDate,
+} from "@/lib/dates";
 import { applyRecurringRules } from "@/lib/recurring";
 
 function money(value: FormDataEntryValue | null): string {
@@ -159,16 +163,33 @@ export async function deleteIncome(id: string, yearMonth: string) {
   revalidatePath(`/month/${yearMonth}`);
 }
 
+function resolveExpenseMonths(formData: FormData) {
+  const method = String(formData.get("method")) as "credit" | "pix_debit";
+  const date = String(formData.get("date") || "").trim();
+  const faturaClosed =
+    formData.get("faturaClosed") === "on" ||
+    formData.get("faturaClosed") === "1" ||
+    formData.get("faturaClosed") === "true";
+
+  if (!date) {
+    throw new Error("Data da compra é obrigatória");
+  }
+
+  if (method === "credit") {
+    const invoiceYm = invoiceMonthFromDate(date, faturaClosed);
+    if (!invoiceYm) throw new Error("Data inválida");
+    return { method, date, yearMonth: null as string | null, invoiceYm };
+  }
+
+  const purchaseYm = dateToYearMonth(date);
+  if (!purchaseYm) throw new Error("Data inválida");
+  return { method, date, yearMonth: purchaseYm, invoiceYm: null as string | null };
+}
+
 export async function createTransaction(formData: FormData) {
   const user = await requireUser();
   const db = await getDb();
-  const method = String(formData.get("method")) as "credit" | "pix_debit";
-  const yearMonth =
-    String(formData.get("yearMonth") || "") || currentYearMonth();
-  const invoiceMonths = formData
-    .getAll("invoices")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const { method, date, yearMonth, invoiceYm } = resolveExpenseMonths(formData);
 
   const [tx] = await db
     .insert(transactions)
@@ -176,51 +197,43 @@ export async function createTransaction(formData: FormData) {
       userId: user.id!,
       description: String(formData.get("description")).trim(),
       amount: money(formData.get("amount")),
-      date: String(formData.get("date") || "") || null,
+      date,
       method,
       accountId: String(formData.get("accountId") || "") || null,
       categoryId: String(formData.get("categoryId") || "") || null,
-      yearMonth: method === "pix_debit" ? yearMonth : null,
+      yearMonth,
       notes: String(formData.get("notes") || "") || null,
     })
     .returning();
 
-  if (method === "credit" && invoiceMonths.length) {
-    await db.insert(transactionInvoices).values(
-      invoiceMonths.map((ym) => ({
-        transactionId: tx.id,
-        yearMonth: ym,
-      })),
-    );
+  if (method === "credit" && invoiceYm) {
+    await db.insert(transactionInvoices).values({
+      transactionId: tx.id,
+      yearMonth: invoiceYm,
+    });
   }
 
   revalidatePath("/transactions");
-  revalidatePath(`/month/${yearMonth}`);
-  for (const ym of invoiceMonths) revalidatePath(`/month/${ym}`);
+  if (yearMonth) revalidatePath(`/month/${yearMonth}`);
+  if (invoiceYm) revalidatePath(`/month/${invoiceYm}`);
 }
 
 export async function updateTransaction(formData: FormData) {
   const user = await requireUser();
   const db = await getDb();
   const id = String(formData.get("id"));
-  const method = String(formData.get("method")) as "credit" | "pix_debit";
-  const yearMonth =
-    String(formData.get("yearMonth") || "") || currentYearMonth();
-  const invoiceMonths = formData
-    .getAll("invoices")
-    .map((v) => String(v).trim())
-    .filter(Boolean);
+  const { method, date, yearMonth, invoiceYm } = resolveExpenseMonths(formData);
 
   await db
     .update(transactions)
     .set({
       description: String(formData.get("description")).trim(),
       amount: money(formData.get("amount")),
-      date: String(formData.get("date") || "") || null,
+      date,
       method,
       accountId: String(formData.get("accountId") || "") || null,
       categoryId: String(formData.get("categoryId") || "") || null,
-      yearMonth: method === "pix_debit" ? yearMonth : null,
+      yearMonth,
       notes: String(formData.get("notes") || "") || null,
     })
     .where(and(eq(transactions.id, id), eq(transactions.userId, user.id!)));
@@ -229,17 +242,17 @@ export async function updateTransaction(formData: FormData) {
     .delete(transactionInvoices)
     .where(eq(transactionInvoices.transactionId, id));
 
-  if (method === "credit" && invoiceMonths.length) {
-    await db.insert(transactionInvoices).values(
-      invoiceMonths.map((ym) => ({
-        transactionId: id,
-        yearMonth: ym,
-      })),
-    );
+  if (method === "credit" && invoiceYm) {
+    await db.insert(transactionInvoices).values({
+      transactionId: id,
+      yearMonth: invoiceYm,
+    });
   }
 
   revalidatePath("/transactions");
   revalidatePath("/month");
+  if (yearMonth) revalidatePath(`/month/${yearMonth}`);
+  if (invoiceYm) revalidatePath(`/month/${invoiceYm}`);
 }
 
 export async function deleteTransaction(id: string) {

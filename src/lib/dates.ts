@@ -50,6 +50,26 @@ export function currentYearMonth(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/** Extract "YYYY-MM" from an ISO date string "YYYY-MM-DD". */
+export function dateToYearMonth(dateStr: string): string | null {
+  const m = dateStr.trim().match(/^(\d{4})-(\d{2})/);
+  if (!m) return null;
+  return `${m[1]}-${m[2]}`;
+}
+
+/**
+ * Credit-card invoice month from purchase date.
+ * Default: next month. If fatura is already closed: month after next.
+ */
+export function invoiceMonthFromDate(
+  dateStr: string,
+  faturaClosed = false,
+): string | null {
+  const ym = dateToYearMonth(dateStr);
+  if (!ym) return null;
+  return addMonths(ym, faturaClosed ? 2 : 1);
+}
+
 export function addMonths(ym: string, delta: number): string {
   const [y, m] = ym.split("-").map(Number);
   const d = new Date(y, m - 1 + delta, 1);
