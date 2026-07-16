@@ -45,7 +45,7 @@ export default async function SettingsPage() {
         >
           <button
             type="submit"
-            className="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-accent-soft)]"
+            className="rounded-xl border border-[#F43F5E]/25 px-4 py-2 text-sm font-medium text-[#F43F5E] transition hover:bg-[#F43F5E]/10"
           >
             Sair da conta
           </button>

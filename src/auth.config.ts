@@ -1,5 +1,15 @@
 import type { NextAuthConfig } from "next-auth";
 
+const publicPaths = [
+  "/login",
+  "/register",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+  "/api/auth",
+  "/api/cron",
+];
+
 export const authConfig = {
   trustHost: true,
   session: { strategy: "jwt" },
@@ -22,11 +32,7 @@ export const authConfig = {
     },
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
-      if (
-        pathname.startsWith("/login") ||
-        pathname.startsWith("/api/auth") ||
-        pathname.startsWith("/api/cron")
-      ) {
+      if (publicPaths.some((p) => pathname.startsWith(p))) {
         return true;
       }
       return !!auth;

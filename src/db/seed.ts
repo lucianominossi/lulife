@@ -22,9 +22,17 @@ async function seed() {
     if (force) {
       await db
         .update(users)
-        .set({ passwordHash, name })
+        .set({ passwordHash, name, emailVerified: new Date() })
         .where(eq(users.id, existing[0].id));
       console.log(`Updated password for: ${email}`);
+      return;
+    }
+    if (!existing[0].emailVerified) {
+      await db
+        .update(users)
+        .set({ emailVerified: new Date() })
+        .where(eq(users.id, existing[0].id));
+      console.log(`Marked email verified for: ${email}`);
       return;
     }
     console.log(`User already exists: ${email}`);
@@ -33,7 +41,7 @@ async function seed() {
 
   const [user] = await db
     .insert(users)
-    .values({ email, name, passwordHash })
+    .values({ email, name, passwordHash, emailVerified: new Date() })
     .returning();
 
   console.log(`Created user ${user.email} (${user.id})`);

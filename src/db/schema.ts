@@ -22,6 +22,26 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 
+export const authTokens = pgTable(
+  "auth_tokens",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    type: text("type", {
+      enum: ["email_verify", "password_reset"],
+    }).notNull(),
+    expiresAt: timestamp("expires_at", { mode: "date" }).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    index("auth_tokens_user_type").on(t.userId, t.type),
+    uniqueIndex("auth_tokens_hash").on(t.tokenHash),
+  ],
+);
+
 export const categories = pgTable(
   "categories",
   {
@@ -186,6 +206,14 @@ export const usersRelations = relations(users, ({ many }) => ({
   budgets: many(budgets),
   investments: many(investments),
   recurringRules: many(recurringRules),
+  authTokens: many(authTokens),
+}));
+
+export const authTokensRelations = relations(authTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [authTokens.userId],
+    references: [users.id],
+  }),
 }));
 
 export const transactionsRelations = relations(transactions, ({ one, many }) => ({
@@ -229,6 +257,7 @@ export const budgetsRelations = relations(budgets, ({ one }) => ({
 }));
 
 export type User = typeof users.$inferSelect;
+export type AuthToken = typeof authTokens.$inferSelect;
 export type Category = typeof categories.$inferSelect;
 export type Account = typeof accounts.$inferSelect;
 export type Transaction = typeof transactions.$inferSelect;

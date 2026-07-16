@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
@@ -15,6 +16,7 @@ import {
   X,
   Sparkles,
   ChevronRight,
+  LogOut,
 } from "lucide-react";
 import { IconBox } from "@/components/ui/icon-box";
 
@@ -122,20 +124,30 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
     .toUpperCase();
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[#C4B5FD]">
-        {initials}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-white">
-          {name || "Conta"}
-        </p>
-        {email && (
-          <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
-            {email}
+    <div className="space-y-2">
+      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-3">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[#C4B5FD]">
+          {initials}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-white">
+            {name || "Conta"}
           </p>
-        )}
+          {email && (
+            <p className="truncate text-xs text-[var(--color-sidebar-muted)]">
+              {email}
+            </p>
+          )}
+        </div>
       </div>
+      <button
+        type="button"
+        onClick={() => signOut({ callbackUrl: "/login" })}
+        className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-[#F43F5E]"
+      >
+        <LogOut size={15} />
+        Sair
+      </button>
     </div>
   );
 }

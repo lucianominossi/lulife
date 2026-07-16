@@ -1,0 +1,56 @@
+import Link from "next/link";
+
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="relative grid min-h-dvh lg:grid-cols-2">
+      <section className="relative hidden overflow-hidden bg-[#0E131C] lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div className="absolute -right-20 top-20 h-72 w-72 rounded-full bg-[#8B5CF6]/25 blur-3xl" />
+        <div className="absolute -left-10 bottom-10 h-64 w-64 rounded-full bg-[#3B82F6]/20 blur-3xl" />
+        <Link href="/login" className="relative flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
+            L
+          </span>
+          <p className="text-2xl font-bold tracking-tight text-white">Lulife</p>
+        </Link>
+        <div className="relative max-w-md">
+          <h1 className="text-5xl font-bold leading-tight tracking-tight text-white">
+            Controle financeiro com clareza.
+          </h1>
+          <p className="mt-4 text-lg text-[var(--color-ink-muted)]">
+            Visão do mês, cartões, orçamento e investimentos — em um painel
+            premium.
+          </p>
+        </div>
+        <p className="relative text-sm text-[var(--color-sidebar-muted)]">
+          Finanças pessoais · dark mode
+        </p>
+      </section>
+
+      <section className="relative flex items-center justify-center px-6 py-16">
+        <div className="w-full max-w-md">
+          <Link href="/login" className="mb-2 flex items-center gap-2 lg:hidden">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
+              L
+            </span>
+            <p className="text-2xl font-bold tracking-tight">Lulife</p>
+          </Link>
+          <h2 className="mt-4 text-[32px] font-bold tracking-tight lg:mt-0">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-2 text-[var(--color-ink-muted)]">{subtitle}</p>
+          )}
+          {children}
+        </div>
+      </section>
+    </main>
+  );
+}
