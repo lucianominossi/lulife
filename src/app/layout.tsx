@@ -1,16 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope, Outfit } from "next/font/google";
+import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
-const manrope = Manrope({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-manrope",
-});
-
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {
@@ -22,10 +17,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f0f6f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#021c22" },
-  ],
+  themeColor: "#0B0F17",
 };
 
 export default function RootLayout({
@@ -34,15 +26,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" suppressHydrationWarning>
+    <html lang="pt-BR" className="dark" suppressHydrationWarning>
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('lulife-theme');if(t==='dark'||(t!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}})()`,
+            __html: `(function(){try{document.documentElement.classList.add('dark')}catch(e){}})()`,
           }}
         />
       </head>
-      <body className={`${manrope.variable} ${outfit.variable} antialiased`}>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

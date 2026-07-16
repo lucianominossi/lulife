@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { updateIncome, updateTransaction } from "@/app/actions";
 import { CurrencyInput } from "@/components/currency-input";
 import {
@@ -311,22 +312,56 @@ function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6">
-      <div className="panel max-h-[90dvh] w-full max-w-xl overflow-y-auto rounded-t-2xl p-6 sm:rounded-2xl">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-display text-2xl font-semibold">{title}</h2>
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        aria-label="Fechar"
+        onClick={onClose}
+      />
+      <div className="panel relative z-10 flex max-h-[min(90dvh,720px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
+          <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] hover:bg-[var(--color-surface-2)]"
+            className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition hover:bg-white/5 hover:text-white"
           >
             Fechar
           </button>
         </div>
-        {children}
+        <div className="overflow-y-auto px-6 py-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

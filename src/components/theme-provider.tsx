@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "dark";
 
 const ThemeContext = createContext<{
   theme: Theme;
@@ -19,31 +19,16 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-function getPreferred(): Theme {
-  if (typeof window === "undefined") return "dark";
-  const stored = localStorage.getItem("lulife-theme");
-  if (stored === "light" || stored === "dark") return stored;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme] = useState<Theme>("dark");
 
   useEffect(() => {
-    const initial = getPreferred();
-    setTheme(initial);
-    document.documentElement.classList.toggle("dark", initial === "dark");
+    document.documentElement.classList.add("dark");
+    localStorage.setItem("lulife-theme", "dark");
   }, []);
 
   const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("lulife-theme", next);
-      document.documentElement.classList.toggle("dark", next === "dark");
-      return next;
-    });
+    // Dark mode only — no-op kept for API compatibility
   }, []);
 
   return (

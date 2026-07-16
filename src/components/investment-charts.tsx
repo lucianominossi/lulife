@@ -15,13 +15,47 @@ import {
 import { formatBRL } from "@/lib/dates";
 
 const COLORS = [
-  "#F16744",
-  "#0193A5",
-  "#F6A278",
-  "#027184",
-  "#C73618",
-  "#004A59",
+  "#8B5CF6",
+  "#3B82F6",
+  "#22C55E",
+  "#F43F5E",
+  "#FB923C",
+  "#FACC15",
+  "#06B6D4",
+  "#EC4899",
 ];
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: { name: string; value: number; color?: string; payload?: { fill?: string } }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-white/10 bg-[#0E131C]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+      {label && (
+        <p className="mb-1.5 text-xs font-medium text-[#7A8596]">{label}</p>
+      )}
+      <ul className="space-y-1">
+        {payload.map((p) => (
+          <li
+            key={p.name}
+            className="flex items-center justify-between gap-4 text-sm"
+          >
+            <span className="text-[#B4BDC9]">{p.name}</span>
+            <span className="tabular-nums font-medium text-white">
+              {formatBRL(p.value)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function InvestmentCharts({
   byType,
@@ -32,10 +66,11 @@ export function InvestmentCharts({
 }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="panel p-5">
-        <h3 className="mb-3 text-sm font-medium text-[var(--color-ink-muted)]">
-          Por tipo
-        </h3>
+      <div className="panel p-6">
+        <h3 className="text-lg font-semibold tracking-tight">Por tipo</h3>
+        <p className="mt-1 mb-4 text-sm text-[var(--color-ink-muted)]">
+          Distribuição da carteira
+        </p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -45,27 +80,28 @@ export function InvestmentCharts({
                 nameKey="name"
                 innerRadius={55}
                 outerRadius={90}
-                paddingAngle={2}
+                paddingAngle={3}
+                stroke="none"
               >
                 {byType.map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(v: number) => formatBRL(v)} />
+              <Tooltip content={<ChartTooltip />} />
             </PieChart>
           </ResponsiveContainer>
         </div>
-        <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
           {byType.map((t, i) => (
             <li key={t.name} className="flex justify-between gap-2 text-sm">
-              <span className="flex items-center gap-2">
+              <span className="flex items-center gap-2 text-[var(--color-ink-muted)]">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
                   style={{ background: COLORS[i % COLORS.length] }}
                 />
                 {t.name}
               </span>
-              <span className="tabular-nums text-[var(--color-ink-muted)]">
+              <span className="tabular-nums text-[var(--color-ink-subtle)]">
                 {formatBRL(t.value)}
               </span>
             </li>
@@ -73,21 +109,35 @@ export function InvestmentCharts({
         </ul>
       </div>
 
-      <div className="panel p-5">
-        <h3 className="mb-3 text-sm font-medium text-[var(--color-ink-muted)]">
+      <div className="panel p-6">
+        <h3 className="text-lg font-semibold tracking-tight">
           Por instituição
         </h3>
+        <p className="mt-1 mb-4 text-sm text-[var(--color-ink-muted)]">
+          Alocação por corretora
+        </p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={byInstitution} margin={{ left: 0, right: 8 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
                 stroke="var(--chart-grid)"
+                vertical={false}
               />
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: "var(--ink-muted)" }} />
-              <YAxis tick={{ fontSize: 12, fill: "var(--ink-muted)" }} width={56} />
-              <Tooltip formatter={(v: number) => formatBRL(v)} />
-              <Bar dataKey="value" fill="#0193A5" radius={[6, 6, 0, 0]} />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 12, fill: "#7A8596" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tick={{ fontSize: 12, fill: "#7A8596" }}
+                width={56}
+                axisLine={false}
+                tickLine={false}
+              />
+              <Tooltip content={<ChartTooltip />} />
+              <Bar dataKey="value" name="Valor" fill="#3B82F6" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

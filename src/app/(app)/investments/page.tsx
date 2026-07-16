@@ -39,13 +39,15 @@ export default async function InvestmentsPage() {
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-[var(--color-ink-muted)]">
-            Patrimônio
-          </p>
-          <h1 className="mt-1 font-display text-4xl font-semibold tracking-tight lg:text-5xl">
-            <Money value={total} />
+          <h1 className="text-[32px] font-bold tracking-tight">
+            Investimentos
           </h1>
-          <p className="mt-1 text-[var(--color-ink-muted)]">Total investido</p>
+          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+            Patrimônio investido
+          </p>
+          <p className="mt-3 text-[34px] font-bold tracking-tight text-[#3B82F6]">
+            <Money value={total} />
+          </p>
         </div>
       </header>
 

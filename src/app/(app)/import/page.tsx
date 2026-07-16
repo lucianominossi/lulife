@@ -63,7 +63,7 @@ export default function ImportPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="font-display text-3xl font-semibold tracking-tight lg:text-4xl">
+        <h1 className="text-[32px] font-bold tracking-tight">
           Importar
         </h1>
         <p className="mt-1 text-[var(--color-ink-muted)]">

@@ -83,10 +83,8 @@ export default async function TransactionsPage({
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-3xl font-semibold tracking-tight lg:text-4xl">
-            Gastos
-          </h1>
-          <p className="mt-1 text-[var(--color-ink-muted)]">
+          <h1 className="text-[32px] font-bold tracking-tight">Gastos</h1>
+          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
             Crédito e Pix/Débito em um só lugar
           </p>
         </div>
@@ -103,10 +101,10 @@ export default async function TransactionsPage({
               <Link
                 key={f.href}
                 href={f.href}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition ${
+                className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
                   active
-                    ? "bg-[var(--color-accent)] text-white"
-                    : "panel text-[var(--color-ink-muted)]"
+                    ? "bg-[var(--accent-soft)] text-[#C4B5FD]"
+                    : "border border-[var(--border-strong)] text-[var(--color-ink-muted)] hover:bg-white/5 hover:text-white"
                 }`}
               >
                 {f.label}
