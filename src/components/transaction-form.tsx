@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createTransaction } from "@/app/actions";
+import { CurrencyInput } from "@/components/currency-input";
 import {
   invoiceMonthFromDate,
   yearMonthToLabel,
@@ -62,14 +63,7 @@ export function TransactionForm({
         placeholder="Descrição"
         className="input-field"
       />
-      <input
-        name="amount"
-        type="number"
-        step="0.01"
-        required
-        placeholder="Valor"
-        className="input-field"
-      />
+      <CurrencyInput name="amount" required placeholder="Valor (R$ 0,00)" />
       <input
         name="date"
         type="date"

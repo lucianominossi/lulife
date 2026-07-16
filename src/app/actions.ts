@@ -22,7 +22,11 @@ import {
 import { applyRecurringRules } from "@/lib/recurring";
 
 function money(value: FormDataEntryValue | null): string {
-  const n = parseFloat(String(value ?? "0").replace(",", "."));
+  let raw = String(value ?? "0").replace(/[^\d.,-]/g, "");
+  if (raw.includes(",")) {
+    raw = raw.replace(/\./g, "").replace(",", ".");
+  }
+  const n = parseFloat(raw);
   return (Number.isFinite(n) ? n : 0).toFixed(2);
 }
 

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { updateIncome, updateTransaction } from "@/app/actions";
+import { CurrencyInput } from "@/components/currency-input";
 import {
   addMonths,
   currentYearMonth,
@@ -101,14 +102,14 @@ export function EditTransactionButton({
                 defaultValue={record.description}
               />
             </div>
-            <Field
-              label="Valor"
-              name="amount"
-              type="number"
-              step="0.01"
-              required
-              defaultValue={String(record.amount)}
-            />
+            <label className="block space-y-1 text-sm">
+              <span className="text-[var(--color-ink-muted)]">Valor</span>
+              <CurrencyInput
+                name="amount"
+                required
+                defaultValue={String(record.amount)}
+              />
+            </label>
             <label className="block space-y-1 text-sm">
               <span className="text-[var(--color-ink-muted)]">Data</span>
               <input
@@ -244,14 +245,14 @@ export function EditIncomeButton({
                 defaultValue={record.description}
               />
             </div>
-            <Field
-              label="Valor"
-              name="amount"
-              type="number"
-              step="0.01"
-              required
-              defaultValue={String(record.amount)}
-            />
+            <label className="block space-y-1 text-sm">
+              <span className="text-[var(--color-ink-muted)]">Valor</span>
+              <CurrencyInput
+                name="amount"
+                required
+                defaultValue={String(record.amount)}
+              />
+            </label>
             <label className="block space-y-1 text-sm">
               <span className="text-[var(--color-ink-muted)]">Mês</span>
               <select
