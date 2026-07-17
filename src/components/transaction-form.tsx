@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { createTransaction } from "@/app/actions";
+import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import {
   invoiceMonthFromDate,
@@ -81,18 +82,12 @@ export function TransactionForm({
         <option value="credit">Cartão de crédito</option>
         <option value="pix_debit">Pix / Débito</option>
       </select>
-      <select name="categoryId" className="input-field" defaultValue="" required>
-        <option value="" disabled>
-          Categoria
-        </option>
-        {categories
-          .filter((c) => c.kind === "expense")
-          .map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-      </select>
+      <CategoryPicker
+        kind="expense"
+        categories={categories}
+        required
+        label="Categoria"
+      />
       {method === "credit" ? (
         <>
           <select name="accountId" className="input-field" defaultValue="" required>

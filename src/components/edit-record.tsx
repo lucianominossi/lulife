@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { updateIncome, updateTransaction } from "@/app/actions";
+import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import {
   addMonths,
@@ -136,14 +137,15 @@ export function EditTransactionButton({
                 <option value="pix_debit">Pix / Débito</option>
               </select>
             </label>
-            <Select
-              label="Categoria"
-              name="categoryId"
-              defaultValue={record.categoryId ?? ""}
-              options={categories
-                .filter((c) => c.kind === "expense")
-                .map((c) => ({ value: c.id, label: c.name }))}
-            />
+            <div className="sm:col-span-2">
+              <CategoryPicker
+                kind="expense"
+                categories={categories}
+                defaultValue={record.categoryId ?? ""}
+                required
+                label="Categoria"
+              />
+            </div>
             {method === "credit" ? (
               <>
                 <Select
@@ -269,13 +271,12 @@ export function EditIncomeButton({
                 ))}
               </select>
             </label>
-            <Select
-              label="Tipo"
-              name="categoryId"
+            <CategoryPicker
+              kind="income"
+              categories={categories}
               defaultValue={record.categoryId ?? ""}
-              options={categories
-                .filter((c) => c.kind === "income")
-                .map((c) => ({ value: c.id, label: c.name }))}
+              required
+              label="Tipo"
             />
             <Select
               label="Conta"

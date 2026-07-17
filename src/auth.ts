@@ -25,15 +25,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         if (!email || !password) return null;
 
         const db = await getDb();
-        const [user] = await db
+        // Prefer verified matches — recovery can leave duplicate email rows.
+        const matches = await db
           .select()
           .from(users)
-          .where(eq(users.email, email.toLowerCase()))
-          .limit(1);
+          .where(eq(users.email, email.toLowerCase().trim()));
+
+        let user = null as (typeof matches)[number] | null;
+        for (const candidate of matches) {
+          if (!(await bcrypt.compare(password, candidate.passwordHash))) continue;
+          if (!user || (candidate.emailVerified && !user.emailVerified)) {
+            user = candidate;
+          }
+          if (candidate.emailVerified) break;
+        }
 
         if (!user) return null;
-        const ok = await bcrypt.compare(password, user.passwordHash);
-        if (!ok) return null;
 
         if (!user.emailVerified) {
           throw new EmailNotVerifiedError();

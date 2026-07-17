@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { createIncome, createTransaction } from "@/app/actions";
+import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import {
   invoiceMonthFromDate,
@@ -151,13 +152,14 @@ export function FabQuickAdd({
                         <option value="pix_debit">Pix / Débito</option>
                       </select>
                     </label>
-                    <Select
-                      label="Categoria"
-                      name="categoryId"
-                      options={meta.categories
-                        .filter((c) => c.kind === "expense")
-                        .map((c) => ({ value: c.id, label: c.name }))}
-                    />
+                    <div className="sm:col-span-2">
+                      <CategoryPicker
+                        kind="expense"
+                        categories={meta.categories}
+                        required
+                        label="Categoria"
+                      />
+                    </div>
                     {method === "credit" ? (
                       <>
                         <Select
@@ -237,12 +239,11 @@ export function FabQuickAdd({
                         ))}
                       </select>
                     </label>
-                    <Select
+                    <CategoryPicker
+                      kind="income"
+                      categories={meta.categories}
+                      required
                       label="Tipo"
-                      name="categoryId"
-                      options={meta.categories
-                        .filter((c) => c.kind === "income")
-                        .map((c) => ({ value: c.id, label: c.name }))}
                     />
                     <Select
                       label="Conta"

@@ -10,10 +10,13 @@ type Db =
   | ReturnType<typeof drizzleNeon<typeof schema>>
   | ReturnType<typeof drizzlePglite<typeof schema>>;
 
-declare global {
-  var __lulifeDb: Db | undefined;
-  var __lulifePglite: PGlite | undefined;
-}
+type DbGlobals = {
+  __lulifeDb?: Db;
+  __lulifePglite?: PGlite;
+  __lulifeDbPromise?: Promise<Db> | null;
+};
+
+const g = globalThis as typeof globalThis & DbGlobals;
 
 async function migratePglite(client: PGlite) {
   await client.exec(`
@@ -137,6 +140,41 @@ async function migratePglite(client: PGlite) {
   `);
 }
 
+function pgliteOpenError(err: unknown, dataDir: string): Error {
+  const message = err instanceof Error ? err.message : String(err);
+  const corruptHint =
+    /Aborted|checkpoint|PANIC|invalid page/i.test(message) ||
+    message === "Aborted()."
+      ? ` O banco em ${dataDir} parece corrompido. Pare o \`next dev\`, mova a pasta para um backup ` +
+        `(ex.: mv .data/pglite .data/pglite-corrupt) e rode \`npm run db:seed\` para recriar.`
+      : ` Pare todos os \`next dev\` nesta pasta (só pode haver um processo usando .data/pglite) e tente de novo.`;
+  return new Error(`Falha ao abrir o banco local (PGlite): ${message}.${corruptHint}`, {
+    cause: err,
+  });
+}
+
+async function openPglite(dataDir: string): Promise<PGlite> {
+  try {
+    return await PGlite.create(dataDir);
+  } catch (firstErr) {
+    // Stale lock after crash/kill — remove pid and retry once.
+    const pidFile = path.join(dataDir, "postmaster.pid");
+    if (fs.existsSync(pidFile)) {
+      try {
+        fs.unlinkSync(pidFile);
+      } catch {
+        // ignore
+      }
+      try {
+        return await PGlite.create(dataDir);
+      } catch (retryErr) {
+        throw pgliteOpenError(retryErr, dataDir);
+      }
+    }
+    throw pgliteOpenError(firstErr, dataDir);
+  }
+}
+
 async function createDb(): Promise<Db> {
   const url = process.env.DATABASE_URL?.trim();
 
@@ -149,27 +187,25 @@ async function createDb(): Promise<Db> {
   const dataDir = path.resolve(process.cwd(), ".data", "pglite");
   fs.mkdirSync(dataDir, { recursive: true });
 
-  if (!global.__lulifePglite) {
-    global.__lulifePglite = await PGlite.create(dataDir);
+  if (!g.__lulifePglite) {
+    g.__lulifePglite = await openPglite(dataDir);
   }
-  await migratePglite(global.__lulifePglite);
-  return drizzlePglite(global.__lulifePglite, { schema });
+  await migratePglite(g.__lulifePglite);
+  return drizzlePglite(g.__lulifePglite, { schema });
 }
 
-let dbPromise: Promise<Db> | null = null;
-
 export async function getDb() {
-  if (global.__lulifeDb) return global.__lulifeDb;
-  if (!dbPromise) {
-    dbPromise = createDb()
+  if (g.__lulifeDb) return g.__lulifeDb;
+  if (!g.__lulifeDbPromise) {
+    g.__lulifeDbPromise = createDb()
       .then((db) => {
-        global.__lulifeDb = db;
+        g.__lulifeDb = db;
         return db;
       })
       .catch((err) => {
-        dbPromise = null;
+        g.__lulifeDbPromise = null;
         throw err;
       });
   }
-  return dbPromise;
+  return g.__lulifeDbPromise;
 }
