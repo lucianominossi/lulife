@@ -13,6 +13,7 @@ import {
   EditIncomeButton,
   EditTransactionButton,
 } from "@/components/edit-record";
+import { DateWithNotes } from "@/components/notes-hint";
 import { Money, StatCard } from "@/components/money";
 import {
   ExpenseDonutChart,
@@ -464,11 +465,11 @@ export default async function MonthPage({
         >
           {pixList.length === 0 && <Empty />}
           <DataTable
-            headers={["Descrição", "Categoria", "Obs.", "Valor", ""]}
+            headers={["Descrição", "Categoria", "Data", "Valor", ""]}
             rows={pixList.map((row) => [
               row.description,
               row.categoryName ?? "—",
-              row.notes ?? "—",
+              <DateWithNotes key="d" date={row.date} notes={row.notes} />,
               <Money key="m" value={toNumber(row.amount)} tone="negative" />,
               <div key="a" className="flex items-center gap-3">
                 <EditTransactionButton

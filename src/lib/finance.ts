@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -186,7 +186,8 @@ export async function listMonthIncomes(userId: string, yearMonth: string) {
     .from(incomes)
     .leftJoin(accounts, eq(incomes.accountId, accounts.id))
     .leftJoin(categories, eq(incomes.categoryId, categories.id))
-    .where(and(eq(incomes.userId, userId), eq(incomes.yearMonth, yearMonth)));
+    .where(and(eq(incomes.userId, userId), eq(incomes.yearMonth, yearMonth)))
+    .orderBy(asc(incomes.date));
 }
 
 export async function listMonthPixDebit(userId: string, yearMonth: string) {
@@ -214,7 +215,8 @@ export async function listMonthPixDebit(userId: string, yearMonth: string) {
         eq(transactions.method, "pix_debit"),
         eq(transactions.yearMonth, yearMonth),
       ),
-    );
+    )
+    .orderBy(asc(transactions.date));
 }
 
 export async function listMonthCredit(userId: string, yearMonth: string) {
@@ -244,5 +246,6 @@ export async function listMonthCredit(userId: string, yearMonth: string) {
         eq(transactions.method, "credit"),
         eq(transactionInvoices.yearMonth, yearMonth),
       ),
-    );
+    )
+    .orderBy(asc(transactions.date));
 }

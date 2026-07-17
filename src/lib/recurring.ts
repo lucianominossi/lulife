@@ -1,4 +1,4 @@
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lte } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   incomes,
@@ -7,6 +7,48 @@ import {
   transactions,
 } from "@/db/schema";
 import { addMonths, currentYearMonth } from "@/lib/dates";
+
+/** Copy category from the parent rule onto generated rows that still lack one. */
+async function syncCategoriesFromRules(userId: string) {
+  const db = await getDb();
+
+  const rulesWithCategory = await db
+    .select({
+      id: recurringRules.id,
+      categoryId: recurringRules.categoryId,
+    })
+    .from(recurringRules)
+    .where(
+      and(
+        eq(recurringRules.userId, userId),
+        isNotNull(recurringRules.categoryId),
+      ),
+    );
+
+  for (const rule of rulesWithCategory) {
+    if (!rule.categoryId) continue;
+    await db
+      .update(transactions)
+      .set({ categoryId: rule.categoryId })
+      .where(
+        and(
+          eq(transactions.userId, userId),
+          eq(transactions.recurringRuleId, rule.id),
+          isNull(transactions.categoryId),
+        ),
+      );
+    await db
+      .update(incomes)
+      .set({ categoryId: rule.categoryId })
+      .where(
+        and(
+          eq(incomes.userId, userId),
+          eq(incomes.recurringRuleId, rule.id),
+          isNull(incomes.categoryId),
+        ),
+      );
+  }
+}
 
 export async function applyRecurringRules(userId: string, untilYm?: string) {
   const db = await getDb();
@@ -78,6 +120,8 @@ export async function applyRecurringRules(userId: string, untilYm?: string) {
       .set({ nextRun: cursor })
       .where(eq(recurringRules.id, rule.id));
   }
+
+  await syncCategoriesFromRules(userId);
 
   return created;
 }

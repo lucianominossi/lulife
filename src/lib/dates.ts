@@ -88,6 +88,14 @@ export function formatBRL(value: number): string {
   }).format(value);
 }
 
+/** Convert "YYYY-MM-DD" → "dd/mm/aaaa". */
+export function formatDateBR(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  const m = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return dateStr;
+  return `${m[3]}/${m[2]}/${m[1]}`;
+}
+
 export function toNumber(value: string | number | null | undefined): number {
   if (value == null) return 0;
   if (typeof value === "number") return value;
