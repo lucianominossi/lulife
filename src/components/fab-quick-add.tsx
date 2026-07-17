@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { createIncome, createTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
+import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
 import {
   invoiceMonthFromDate,
   yearMonthOptions,
@@ -205,6 +206,7 @@ export function FabQuickAdd({
                         }))}
                       />
                     )}
+                    <ExpenseRepeatFields method={method} date={date} />
                     <button type="submit" className="btn-primary sm:col-span-2">
                       Salvar gasto
                     </button>

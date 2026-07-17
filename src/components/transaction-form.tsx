@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { createTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
+import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
 import {
   invoiceMonthFromDate,
   yearMonthToLabel,
@@ -134,6 +135,7 @@ export function TransactionForm({
           ))}
         </select>
       )}
+      <ExpenseRepeatFields method={method} date={date} />
       <button type="submit" className="btn-primary w-full">
         Salvar
       </button>

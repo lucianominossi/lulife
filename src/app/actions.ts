@@ -18,6 +18,7 @@ import {
   currentYearMonth,
   dateToYearMonth,
   invoiceMonthFromDate,
+  addMonths,
 } from "@/lib/dates";
 import { applyRecurringRules } from "@/lib/recurring";
 
@@ -261,31 +262,100 @@ export async function createTransaction(formData: FormData) {
   const db = await getDb();
   const { method, date, yearMonth, invoiceYm } = resolveExpenseMonths(formData);
 
+  const description = String(formData.get("description")).trim();
+  const amount = money(formData.get("amount"));
+  const accountId = String(formData.get("accountId") || "") || null;
+  const categoryId = String(formData.get("categoryId") || "") || null;
+  const notes = String(formData.get("notes") || "") || null;
+
+  const installmentCount = Math.max(
+    1,
+    parseInt(String(formData.get("installmentCount") || "1"), 10) || 1,
+  );
+  const recurringFlag =
+    formData.get("recurring") === "on" ||
+    formData.get("recurring") === "1" ||
+    formData.get("recurring") === "true";
+  // Parcelado (N>1) never creates an ongoing rule.
+  const wantRecurring =
+    recurringFlag && !(method === "credit" && installmentCount > 1);
+
+  const dateDay = Math.min(
+    28,
+    Math.max(1, parseInt(date.slice(8, 10), 10) || 1),
+  );
+  const dayOfMonth = Math.min(
+    28,
+    Math.max(
+      1,
+      parseInt(String(formData.get("dayOfMonth") || dateDay), 10) || dateDay,
+    ),
+  );
+
+  let recurringRuleId: string | null = null;
+  if (wantRecurring) {
+    const baseYm =
+      method === "credit" && invoiceYm
+        ? invoiceYm
+        : yearMonth || dateToYearMonth(date);
+    if (!baseYm) throw new Error("Data inválida para recorrência");
+    const nextRun = addMonths(baseYm, 1);
+
+    const [rule] = await db
+      .insert(recurringRules)
+      .values({
+        userId: user.id!,
+        kind: "expense",
+        description,
+        amount,
+        method,
+        accountId,
+        categoryId,
+        cadence: "monthly",
+        dayOfMonth,
+        nextRun,
+        active: true,
+        installmentCount: method === "credit" ? 1 : null,
+      })
+      .returning();
+    recurringRuleId = rule.id;
+  }
+
   const [tx] = await db
     .insert(transactions)
     .values({
       userId: user.id!,
-      description: String(formData.get("description")).trim(),
-      amount: money(formData.get("amount")),
+      description,
+      amount,
       date,
       method,
-      accountId: String(formData.get("accountId") || "") || null,
-      categoryId: String(formData.get("categoryId") || "") || null,
+      accountId,
+      categoryId,
       yearMonth,
-      notes: String(formData.get("notes") || "") || null,
+      notes,
+      recurringRuleId,
     })
     .returning();
 
+  const invoiceMonths: string[] = [];
   if (method === "credit" && invoiceYm) {
-    await db.insert(transactionInvoices).values({
-      transactionId: tx.id,
-      yearMonth: invoiceYm,
-    });
+    for (let i = 0; i < installmentCount; i++) {
+      invoiceMonths.push(addMonths(invoiceYm, i));
+    }
+    await db.insert(transactionInvoices).values(
+      invoiceMonths.map((ym) => ({
+        transactionId: tx.id,
+        yearMonth: ym,
+      })),
+    );
   }
 
   revalidatePath("/transactions");
   if (yearMonth) revalidatePath(`/month/${yearMonth}`);
-  if (invoiceYm) revalidatePath(`/month/${invoiceYm}`);
+  for (const ym of invoiceMonths) {
+    revalidatePath(`/month/${ym}`);
+  }
+  if (recurringRuleId) revalidatePath("/recurring");
 }
 
 export async function updateTransaction(formData: FormData) {

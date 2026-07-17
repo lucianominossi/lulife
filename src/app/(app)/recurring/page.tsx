@@ -28,8 +28,12 @@ export default async function RecurringPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-bold tracking-tight">Recorrências</h1>
-          <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Salários, assinaturas e contas fixas
+          <p className="mt-1 max-w-xl text-sm text-[var(--color-ink-muted)]">
+            Gerencie regras ativas (pausar, excluir, gerar). Gastos do dia a dia —
+            cobrança em conta ou compra parcelada no cartão — nascem em{" "}
+            <span className="text-[var(--color-ink)]">+ Novo lançamento</span>.
+            Use o formulário ao lado para entradas recorrentes ou regras sem
+            lançar o mês atual.
           </p>
         </div>
         <form action={runRecurringNow}>
