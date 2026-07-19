@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const brl = new Intl.NumberFormat("pt-BR", {
   style: "currency",
@@ -25,6 +25,7 @@ export function CurrencyInput({
   id,
   className = "input-field",
   placeholder = "R$ 0,00",
+  allowNegative = false,
 }: {
   name: string;
   required?: boolean;
@@ -32,24 +33,54 @@ export function CurrencyInput({
   id?: string;
   className?: string;
   placeholder?: string;
+  /** When true, press "-" to toggle estorno (negative amount). */
+  allowNegative?: boolean;
 }) {
-  const [cents, setCents] = useState<number>(() => parseInitial(defaultValue));
+  const initial = parseInitial(defaultValue);
+  const [absCents, setAbsCents] = useState(() => Math.abs(initial));
+  const [isNegative, setIsNegative] = useState(
+    () => allowNegative && initial < 0,
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const display = cents === 0 ? "" : centsToDisplay(cents);
+  // React resets uncontrolled fields after a form action; mirror that here
+  // so the internal amount/sign state clears too (fixes "fica sempre negativo").
+  useEffect(() => {
+    const form = inputRef.current?.form;
+    if (!form) return;
+    const handleReset = () => {
+      const init = parseInitial(defaultValue);
+      setAbsCents(Math.abs(init));
+      setIsNegative(allowNegative && init < 0);
+    };
+    form.addEventListener("reset", handleReset);
+    return () => form.removeEventListener("reset", handleReset);
+  }, [defaultValue, allowNegative]);
+
+  const cents = allowNegative && isNegative ? -absCents : absCents;
+  const display = absCents === 0 ? "" : centsToDisplay(cents);
 
   return (
     <>
       <input
+        ref={inputRef}
         id={id}
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         autoComplete="off"
         required={required}
         placeholder={placeholder}
         value={display}
+        onKeyDown={(e) => {
+          if (!allowNegative) return;
+          if (e.key === "-" || e.key === "−") {
+            e.preventDefault();
+            setIsNegative((n) => !n);
+          }
+        }}
         onChange={(e) => {
           const digits = e.target.value.replace(/\D/g, "");
-          setCents(digits ? parseInt(digits, 10) : 0);
+          setAbsCents(digits ? parseInt(digits, 10) : 0);
         }}
         className={className}
       />

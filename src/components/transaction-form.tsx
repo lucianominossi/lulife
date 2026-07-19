@@ -46,6 +46,9 @@ export function TransactionForm({
     <form
       action={async (fd) => {
         await createTransaction(fd);
+        setDate("");
+        setMethod("credit");
+        setFaturaClosed(false);
       }}
       className="panel h-fit space-y-3 p-5"
     >
@@ -65,7 +68,13 @@ export function TransactionForm({
         placeholder="Descrição"
         className="input-field"
       />
-      <CurrencyInput name="amount" required placeholder="Valor (R$ 0,00)" />
+      <CurrencyInput
+        key={`form-amount-${method}`}
+        name="amount"
+        required
+        placeholder="Valor (R$ 0,00)"
+        allowNegative={method === "credit"}
+      />
       <input
         name="date"
         type="date"
@@ -116,14 +125,6 @@ export function TransactionForm({
               </span>
             </span>
           </label>
-          {invoicePreview && (
-            <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)]">
-              Fatura/mês:{" "}
-              <strong className="text-[var(--color-ink)]">
-                {yearMonthToLabel(invoicePreview)}
-              </strong>
-            </p>
-          )}
         </>
       ) : (
         <select name="accountId" className="input-field" defaultValue="">
@@ -136,6 +137,19 @@ export function TransactionForm({
         </select>
       )}
       <ExpenseRepeatFields method={method} date={date} />
+      {method === "credit" && invoicePreview && (
+        <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)]">
+          Primeira cobrança entra na fatura de{" "}
+          <strong className="text-[var(--color-ink)]">
+            {yearMonthToLabel(invoicePreview)}
+          </strong>
+        </p>
+      )}
+      <input
+        name="notes"
+        placeholder="Obs. (opcional)"
+        className="input-field"
+      />
       <button type="submit" className="btn-primary w-full">
         Salvar
       </button>

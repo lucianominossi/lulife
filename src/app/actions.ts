@@ -31,6 +31,15 @@ function money(value: FormDataEntryValue | null): string {
   return (Number.isFinite(n) ? n : 0).toFixed(2);
 }
 
+/** Empty, 0, NaN, or invalid → 1; otherwise clamp to 1–48. */
+function parseInstallmentCount(formData: FormData): number {
+  const raw = String(formData.get("installmentCount") ?? "").trim();
+  if (!raw) return 1;
+  const n = parseInt(raw, 10);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(48, n);
+}
+
 export async function createCategory(formData: FormData) {
   const name = String(formData.get("name") || "").trim();
   const kind = String(formData.get("kind")) as "expense" | "income";
@@ -268,10 +277,7 @@ export async function createTransaction(formData: FormData) {
   const categoryId = String(formData.get("categoryId") || "") || null;
   const notes = String(formData.get("notes") || "") || null;
 
-  const installmentCount = Math.max(
-    1,
-    parseInt(String(formData.get("installmentCount") || "1"), 10) || 1,
-  );
+  const installmentCount = parseInstallmentCount(formData);
   const recurringFlag =
     formData.get("recurring") === "on" ||
     formData.get("recurring") === "1" ||
@@ -363,6 +369,12 @@ export async function updateTransaction(formData: FormData) {
   const db = await getDb();
   const id = String(formData.get("id"));
   const { method, date, yearMonth, invoiceYm } = resolveExpenseMonths(formData);
+  const installmentCount = parseInstallmentCount(formData);
+
+  const existingInvoices = await db
+    .select({ yearMonth: transactionInvoices.yearMonth })
+    .from(transactionInvoices)
+    .where(eq(transactionInvoices.transactionId, id));
 
   await db
     .update(transactions)
@@ -382,17 +394,30 @@ export async function updateTransaction(formData: FormData) {
     .delete(transactionInvoices)
     .where(eq(transactionInvoices.transactionId, id));
 
+  const invoiceMonths: string[] = [];
   if (method === "credit" && invoiceYm) {
-    await db.insert(transactionInvoices).values({
-      transactionId: id,
-      yearMonth: invoiceYm,
-    });
+    for (let i = 0; i < installmentCount; i++) {
+      invoiceMonths.push(addMonths(invoiceYm, i));
+    }
+    await db.insert(transactionInvoices).values(
+      invoiceMonths.map((ym) => ({
+        transactionId: id,
+        yearMonth: ym,
+      })),
+    );
   }
+
+  const monthsToRevalidate = new Set<string>([
+    ...existingInvoices.map((r) => r.yearMonth),
+    ...invoiceMonths,
+  ]);
+  if (yearMonth) monthsToRevalidate.add(yearMonth);
 
   revalidatePath("/transactions");
   revalidatePath("/month");
-  if (yearMonth) revalidatePath(`/month/${yearMonth}`);
-  if (invoiceYm) revalidatePath(`/month/${invoiceYm}`);
+  for (const ym of monthsToRevalidate) {
+    revalidatePath(`/month/${ym}`);
+  }
 }
 
 export async function deleteTransaction(id: string) {

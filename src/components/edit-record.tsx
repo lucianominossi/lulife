@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { updateIncome, updateTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
+import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
 import {
   addMonths,
   currentYearMonth,
@@ -44,8 +45,9 @@ function inferFaturaClosed(date: string | null, invoices?: string[]) {
   if (!date || !invoices?.length) return false;
   const purchaseYm = dateToYearMonth(date);
   if (!purchaseYm) return false;
+  const firstInvoice = [...invoices].sort()[0];
   const expectedClosed = addMonths(purchaseYm, 2);
-  return invoices[0] === expectedClosed;
+  return firstInvoice === expectedClosed;
 }
 
 export function EditTransactionButton({
@@ -107,9 +109,11 @@ export function EditTransactionButton({
             <label className="block space-y-1 text-sm">
               <span className="text-[var(--color-ink-muted)]">Valor</span>
               <CurrencyInput
+                key={`tx-amount-${method}`}
                 name="amount"
                 required
                 defaultValue={String(record.amount)}
+                allowNegative={method === "credit"}
               />
             </label>
             <label className="block space-y-1 text-sm">
@@ -172,14 +176,6 @@ export function EditTransactionButton({
                     </span>
                   </span>
                 </label>
-                {invoicePreview && (
-                  <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)] sm:col-span-2">
-                    Fatura/mês:{" "}
-                    <strong className="text-[var(--color-ink)]">
-                      {yearMonthToLabel(invoicePreview)}
-                    </strong>
-                  </p>
-                )}
               </>
             ) : (
               <Select
@@ -192,6 +188,26 @@ export function EditTransactionButton({
                   label: a.name,
                 }))}
               />
+            )}
+            {method === "credit" && (
+              <ExpenseRepeatFields
+                method="credit"
+                date={date}
+                initialInstallmentCount={
+                  record.invoices?.length && record.invoices.length > 0
+                    ? record.invoices.length
+                    : 1
+                }
+                hideSubscription
+              />
+            )}
+            {method === "credit" && invoicePreview && (
+              <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)] sm:col-span-2">
+                Primeira cobrança entra na fatura de{" "}
+                <strong className="text-[var(--color-ink)]">
+                  {yearMonthToLabel(invoicePreview)}
+                </strong>
+              </p>
             )}
             <Field
               label="Obs."

@@ -13,7 +13,7 @@ import {
   EditIncomeButton,
   EditTransactionButton,
 } from "@/components/edit-record";
-import { DateWithNotes } from "@/components/notes-hint";
+import { DateWithNotes, DescriptionWithNotes } from "@/components/notes-hint";
 import { Money, StatCard } from "@/components/money";
 import {
   ExpenseDonutChart,
@@ -210,6 +210,7 @@ export default async function MonthPage({
             yearMonth: ym,
             accountId: row.accountId,
             categoryId: row.categoryId,
+            notes: row.notes,
             invoices: invoicesByTx.get(row.id) ?? [ym],
           }}
           categories={cats}
@@ -506,7 +507,11 @@ export default async function MonthPage({
         <DataTable
           headers={["Descrição", "Categoria", "Cartão", "Valor", ""]}
           rows={creditList.map((row) => [
-            row.description,
+            <DescriptionWithNotes
+              key="d"
+              description={row.description}
+              notes={row.notes}
+            />,
             row.categoryName ?? "—",
             row.accountName ?? "—",
             <Money key="m" value={toNumber(row.amount)} tone="negative" />,
@@ -521,6 +526,7 @@ export default async function MonthPage({
                   yearMonth: ym,
                   accountId: row.accountId,
                   categoryId: row.categoryId,
+                  notes: row.notes,
                   invoices: invoicesByTx.get(row.id) ?? [ym],
                 }}
                 categories={cats}

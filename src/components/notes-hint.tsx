@@ -1,7 +1,74 @@
 "use client";
 
+import { useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Info } from "lucide-react";
 import { formatDateBR } from "@/lib/dates";
+
+export function NotesHint({ notes }: { notes?: string | null }) {
+  const trimmed = notes?.trim();
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const tooltipId = useId();
+  const [position, setPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  if (!trimmed) return null;
+
+  function showTooltip() {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const viewportPadding = 132;
+    const x = Math.min(
+      window.innerWidth - viewportPadding,
+      Math.max(viewportPadding, rect.left + rect.width / 2),
+    );
+    setPosition({
+      x,
+      y: rect.top - 10,
+    });
+  }
+
+  return (
+    <span className="inline-flex items-center">
+      <button
+        ref={buttonRef}
+        type="button"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-ink-subtle)] transition hover:bg-white/10 hover:text-[#C4B5FD]"
+        aria-label="Ver observação"
+        aria-describedby={position ? tooltipId : undefined}
+        onMouseEnter={showTooltip}
+        onMouseLeave={() => setPosition(null)}
+        onFocus={showTooltip}
+        onBlur={() => setPosition(null)}
+      >
+        <Info size={14} strokeWidth={2} />
+      </button>
+      {position &&
+        createPortal(
+          <span
+            id={tooltipId}
+            role="tooltip"
+            className="pointer-events-none fixed z-[9999] w-max max-w-[min(240px,calc(100vw-24px))] -translate-x-1/2 -translate-y-full rounded-xl border border-white/10 bg-[#141A23] px-3 py-2 text-left text-xs leading-relaxed text-white shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+            style={{ left: position.x, top: position.y }}
+          >
+            {trimmed}
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[8px] border-x-transparent border-t-white/10"
+            />
+            <span
+              aria-hidden="true"
+              className="absolute left-1/2 top-[calc(100%-1px)] h-0 w-0 -translate-x-1/2 border-x-[6px] border-t-[7px] border-x-transparent border-t-[#141A23]"
+            />
+          </span>,
+          document.body,
+        )}
+    </span>
+  );
+}
 
 export function DateWithNotes({
   date,
@@ -11,28 +78,26 @@ export function DateWithNotes({
   notes?: string | null;
 }) {
   const label = formatDateBR(date);
-  const trimmed = notes?.trim();
-
-  if (!trimmed) {
-    return <span className="tabular-nums text-[var(--color-ink-muted)]">{label}</span>;
-  }
 
   return (
     <span className="group relative inline-flex items-center gap-1.5">
       <span className="tabular-nums text-[var(--color-ink-muted)]">{label}</span>
-      <button
-        type="button"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-ink-subtle)] transition hover:bg-white/10 hover:text-[#C4B5FD]"
-        aria-label="Ver observação"
-      >
-        <Info size={14} strokeWidth={2} />
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 w-max max-w-[240px] -translate-x-1/2 rounded-xl border border-white/10 bg-[#141A23] px-3 py-2 text-left text-xs leading-relaxed text-white opacity-0 shadow-[0_12px_40px_rgba(0,0,0,0.45)] transition group-hover:opacity-100 group-focus-within:opacity-100"
-      >
-        {trimmed}
-      </span>
+      <NotesHint notes={notes} />
+    </span>
+  );
+}
+
+export function DescriptionWithNotes({
+  description,
+  notes,
+}: {
+  description: string;
+  notes?: string | null;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span>{description}</span>
+      <NotesHint notes={notes} />
     </span>
   );
 }

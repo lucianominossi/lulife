@@ -117,6 +117,9 @@ export function FabQuickAdd({
                   <form
                     action={async (fd) => {
                       await createTransaction(fd);
+                      setDate("");
+                      setMethod("credit");
+                      setFaturaClosed(false);
                       setOpen(false);
                     }}
                     className="grid gap-3 sm:grid-cols-2"
@@ -126,7 +129,12 @@ export function FabQuickAdd({
                     </div>
                     <label className="block space-y-1 text-sm">
                       <span className="text-[var(--color-ink-muted)]">Valor</span>
-                      <CurrencyInput name="amount" required />
+                      <CurrencyInput
+                        key={`fab-amount-${method}`}
+                        name="amount"
+                        required
+                        allowNegative={method === "credit"}
+                      />
                     </label>
                     <label className="block space-y-1 text-sm">
                       <span className="text-[var(--color-ink-muted)]">Data</span>
@@ -186,14 +194,6 @@ export function FabQuickAdd({
                             </span>
                           </span>
                         </label>
-                        {invoicePreview && (
-                          <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)] sm:col-span-2">
-                            Fatura/mês:{" "}
-                            <strong className="text-[var(--color-ink)]">
-                              {yearMonthToLabel(invoicePreview)}
-                            </strong>
-                          </p>
-                        )}
                       </>
                     ) : (
                       <Select
@@ -207,6 +207,18 @@ export function FabQuickAdd({
                       />
                     )}
                     <ExpenseRepeatFields method={method} date={date} />
+                    {method === "credit" && invoicePreview && (
+                      <p className="rounded-xl bg-[var(--color-surface-2)] px-3 py-2 text-sm text-[var(--color-ink-muted)] sm:col-span-2">
+                        Primeira cobrança entra na fatura de{" "}
+                        <strong className="text-[var(--color-ink)]">
+                          {yearMonthToLabel(invoicePreview)}
+                        </strong>
+                      </p>
+                    )}
+                    <label className="block space-y-1 text-sm sm:col-span-2">
+                      <span className="text-[var(--color-ink-muted)]">Obs.</span>
+                      <input name="notes" className="input-field" />
+                    </label>
                     <button type="submit" className="btn-primary sm:col-span-2">
                       Salvar gasto
                     </button>

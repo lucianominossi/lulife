@@ -232,6 +232,7 @@ export async function listMonthCredit(userId: string, yearMonth: string) {
       categoryId: transactions.categoryId,
       categoryName: categories.name,
       method: transactions.method,
+      notes: transactions.notes,
     })
     .from(transactionInvoices)
     .innerJoin(
