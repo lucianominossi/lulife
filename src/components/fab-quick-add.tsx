@@ -6,6 +6,7 @@ import { createIncome, createTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
+import { SuccessToast, useSuccessToast } from "@/components/success-toast";
 import {
   invoiceMonthFromDate,
   yearMonthOptions,
@@ -32,6 +33,7 @@ export function FabQuickAdd({
   const [date, setDate] = useState("");
   const [faturaClosed, setFaturaClosed] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { toast, setToast, clearToast } = useSuccessToast();
   const monthChoices = yearMonthOptions(yearMonth);
 
   useEffect(() => {
@@ -74,6 +76,7 @@ export function FabQuickAdd({
           >
             <button
               type="button"
+              tabIndex={-1}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               aria-label="Fechar"
               onClick={() => setOpen(false)}
@@ -121,6 +124,7 @@ export function FabQuickAdd({
                       setMethod("credit");
                       setFaturaClosed(false);
                       setOpen(false);
+                      setToast("Gasto cadastrado com sucesso.");
                     }}
                     className="grid gap-3 sm:grid-cols-2"
                   >
@@ -185,7 +189,7 @@ export function FabQuickAdd({
                             name="faturaClosed"
                             checked={faturaClosed}
                             onChange={(e) => setFaturaClosed(e.target.checked)}
-                            className="mt-0.5"
+                            className="checkbox-field"
                           />
                           <span>
                             Fatura já fechada
@@ -228,6 +232,7 @@ export function FabQuickAdd({
                     action={async (fd) => {
                       await createIncome(fd);
                       setOpen(false);
+                      setToast("Entrada cadastrada com sucesso.");
                     }}
                     className="grid gap-3 sm:grid-cols-2"
                   >
@@ -302,6 +307,7 @@ export function FabQuickAdd({
         </button>
       )}
       {modal}
+      <SuccessToast message={toast} onClose={clearToast} />
     </>
   );
 }

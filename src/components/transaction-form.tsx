@@ -5,6 +5,7 @@ import { createTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
+import { SuccessToast, useSuccessToast } from "@/components/success-toast";
 import {
   invoiceMonthFromDate,
   yearMonthToLabel,
@@ -21,6 +22,7 @@ export function TransactionForm({
   const [method, setMethod] = useState<"credit" | "pix_debit">("credit");
   const [date, setDate] = useState("");
   const [faturaClosed, setFaturaClosed] = useState(false);
+  const { toast, setToast, clearToast } = useSuccessToast();
 
   const invoicePreview = useMemo(() => {
     if (!date || method !== "credit") return null;
@@ -43,12 +45,14 @@ export function TransactionForm({
   }
 
   return (
+    <>
     <form
       action={async (fd) => {
         await createTransaction(fd);
         setDate("");
         setMethod("credit");
         setFaturaClosed(false);
+        setToast("Gasto cadastrado com sucesso.");
       }}
       className="panel h-fit space-y-3 p-5"
     >
@@ -116,7 +120,7 @@ export function TransactionForm({
               name="faturaClosed"
               checked={faturaClosed}
               onChange={(e) => setFaturaClosed(e.target.checked)}
-              className="mt-0.5"
+              className="checkbox-field"
             />
             <span>
               Fatura já fechada
@@ -154,5 +158,7 @@ export function TransactionForm({
         Salvar
       </button>
     </form>
+    <SuccessToast message={toast} onClose={clearToast} />
+    </>
   );
 }

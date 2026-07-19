@@ -167,7 +167,7 @@ export function EditTransactionButton({
                     name="faturaClosed"
                     checked={faturaClosed}
                     onChange={(e) => setFaturaClosed(e.target.checked)}
-                    className="mt-0.5"
+                    className="checkbox-field"
                   />
                   <span>
                     Fatura já fechada
@@ -360,6 +360,7 @@ function Modal({
     >
       <button
         type="button"
+        tabIndex={-1}
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         aria-label="Fechar"
         onClick={onClose}

@@ -59,7 +59,7 @@ export function ExpenseRepeatFields({
             value="1"
             checked={recurring}
             onChange={(e) => setRecurring(e.target.checked)}
-            className="mt-0.5"
+            className="checkbox-field"
           />
           <span>
             Cobrança recorrente
@@ -119,7 +119,7 @@ export function ExpenseRepeatFields({
             value="1"
             checked={recurring}
             onChange={(e) => setRecurring(e.target.checked)}
-            className="mt-0.5"
+            className="checkbox-field"
           />
           <span>
             Assinatura no cartão (todo mês)

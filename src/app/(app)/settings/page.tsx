@@ -5,17 +5,15 @@ import {
   createCategory,
   deleteAccount,
   deleteCategory,
-  upsertBudget,
 } from "@/app/actions";
+import { BudgetSection } from "@/components/budget-section";
 import { getDb } from "@/db";
 import { accounts, budgets, categories } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { currentYearMonth, yearMonthToLabel, toNumber } from "@/lib/dates";
 
 export default async function SettingsPage() {
   const user = await requireUser();
   const db = await getDb();
-  const ym = currentYearMonth();
 
   const [cats, accs, buds] = await Promise.all([
     db.select().from(categories).where(eq(categories.userId, user.id!)),
@@ -34,7 +32,7 @@ export default async function SettingsPage() {
             Cadastros
           </h1>
           <p className="mt-1 text-[var(--color-ink-muted)]">
-            Categorias, contas e orçamento do mês
+            Categorias, contas e orçamento mensal
           </p>
         </div>
         <form
@@ -128,63 +126,7 @@ export default async function SettingsPage() {
         />
       </div>
 
-      <section className="panel p-5">
-        <h2 className="font-display text-xl font-semibold">
-          Orçamento — {yearMonthToLabel(ym)}
-        </h2>
-        <div className="mt-4 grid gap-6 lg:grid-cols-[320px_1fr]">
-          <form action={upsertBudget} className="space-y-3">
-            <input type="hidden" name="yearMonth" value={ym} />
-            <select
-              name="categoryId"
-              required
-              className="input-field"
-              defaultValue=""
-            >
-              <option value="" disabled>
-                Categoria
-              </option>
-              {expenseCats.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <input
-              name="plannedAmount"
-              type="number"
-              step="0.01"
-              required
-              placeholder="Valor planejado"
-              className="input-field"
-            />
-            <button type="submit" className="btn-primary w-full">
-              Salvar orçamento
-            </button>
-          </form>
-          <ul className="divide-y divide-[var(--color-border)]">
-            {buds
-              .filter((b) => b.yearMonth === ym)
-              .map((b) => {
-                const cat = cats.find((c) => c.id === b.categoryId);
-                return (
-                  <li
-                    key={b.id}
-                    className="flex justify-between py-3 text-sm"
-                  >
-                    <span className="font-medium">{cat?.name ?? "?"}</span>
-                    <span className="tabular-nums text-[var(--color-ink-muted)]">
-                      {toNumber(b.plannedAmount).toLocaleString("pt-BR", {
-                        style: "currency",
-                        currency: "BRL",
-                      })}
-                    </span>
-                  </li>
-                );
-              })}
-          </ul>
-        </div>
-      </section>
+      <BudgetSection categories={cats} budgets={buds} />
     </div>
   );
 }

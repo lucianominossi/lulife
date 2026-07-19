@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { createInvestment, deleteInvestment } from "@/app/actions";
+import { CurrencyInput } from "@/components/currency-input";
 import { InvestmentCharts } from "@/components/investment-charts";
 import { Money } from "@/components/money";
 import { getDb } from "@/db";
@@ -73,14 +74,7 @@ export default async function InvestmentsPage() {
               className="input-field"
             />
           </div>
-          <input
-            name="amount"
-            type="number"
-            step="0.01"
-            required
-            placeholder="Valor"
-            className="input-field"
-          />
+          <CurrencyInput name="amount" required placeholder="Valor" />
           <input name="asOfDate" type="date" className="input-field" />
           <button type="submit" className="btn-primary w-full">
             Adicionar

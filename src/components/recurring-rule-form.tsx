@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, X } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { createRecurringRule } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
+import { SuccessToast, useSuccessToast } from "@/components/success-toast";
 import { currentYearMonth } from "@/lib/dates";
 
 type Category = { id: string; name: string; kind: string };
@@ -23,13 +22,7 @@ export function RecurringRuleForm({
   const [method, setMethod] = useState<"credit" | "pix_debit">("pix_debit");
   const [amountKey, setAmountKey] = useState(0);
   const [pending, setPending] = useState(false);
-  const [toast, setToast] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!toast) return;
-    const id = window.setTimeout(() => setToast(null), 3200);
-    return () => window.clearTimeout(id);
-  }, [toast]);
+  const { toast, setToast, clearToast } = useSuccessToast();
 
   const filteredAccounts = useMemo(() => {
     if (kind === "income") {
@@ -218,32 +211,7 @@ export function RecurringRuleForm({
         </button>
       </form>
 
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 16, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.98 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 z-[110] flex max-w-sm items-start gap-3 rounded-2xl border border-white/10 bg-[#141A23] px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
-            role="status"
-          >
-            <CheckCircle2
-              size={18}
-              className="mt-0.5 shrink-0 text-[var(--color-ok)]"
-            />
-            <p className="flex-1 text-sm font-medium text-white">{toast}</p>
-            <button
-              type="button"
-              onClick={() => setToast(null)}
-              className="rounded-lg p-1 text-[var(--color-ink-subtle)] transition hover:bg-white/5 hover:text-white"
-              aria-label="Fechar"
-            >
-              <X size={14} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <SuccessToast message={toast} onClose={clearToast} />
     </>
   );
 }
