@@ -1,25 +1,18 @@
 "use server";
 
-import bcrypt from "bcryptjs";
-import { and, eq, gt, lt } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { signOut } from "@/auth";
 import { getDb } from "@/db";
-import { authTokens, users } from "@/db/schema";
-import {
-  createRawToken,
-  EmailRateLimitedError,
-  hashToken,
-  hasEmailProvider,
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-} from "@/lib/email";
+import { users } from "@/db/schema";
+import { appUrl } from "@/lib/app-url";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/session";
-
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { ensureLocalUser } from "@/lib/supabase/user";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(80),
@@ -32,14 +25,6 @@ const registerSchema = z.object({
 
 const emailSchema = z.string().trim().email("Email inválido.").max(160);
 
-const resetSchema = z.object({
-  token: z.string().min(20),
-  password: z
-    .string()
-    .min(8, "A senha deve ter pelo menos 8 caracteres.")
-    .max(100),
-});
-
 export type AuthActionState = {
   ok?: boolean;
   error?: string;
@@ -49,45 +34,28 @@ export type AuthActionState = {
 const RATE_LIMITED =
   "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
 
-async function purgeExpiredTokens() {
-  const db = await getDb();
-  await db.delete(authTokens).where(lt(authTokens.expiresAt, new Date()));
-}
-
-async function issueToken(
-  userId: string,
-  type: "email_verify" | "password_reset",
-  hoursValid: number,
-) {
-  const db = await getDb();
-  await db
-    .delete(authTokens)
-    .where(and(eq(authTokens.userId, userId), eq(authTokens.type, type)));
-
-  const raw = createRawToken();
-  const tokenHash = hashToken(raw);
-  const expiresAt = new Date(Date.now() + hoursValid * 60 * 60 * 1000);
-
-  await db.insert(authTokens).values({
-    userId,
-    tokenHash,
-    type,
-    expiresAt,
-  });
-
-  return raw;
-}
-
 async function clientIp() {
   const h = await headers();
   return clientIpFromHeaders(h);
 }
 
-function isEmailRateLimited(err: unknown) {
-  return (
-    err instanceof EmailRateLimitedError ||
-    (err instanceof Error && err.name === "EmailRateLimitedError")
-  );
+function authErrorMessage(error: { message?: string; code?: string } | null) {
+  const msg = (error?.message || "").toLowerCase();
+  const code = error?.code || "";
+  if (
+    code === "over_email_send_rate_limit" ||
+    msg.includes("rate limit") ||
+    msg.includes("too many")
+  ) {
+    return RATE_LIMITED;
+  }
+  if (msg.includes("already registered") || msg.includes("already been registered")) {
+    return "Este email já está em uso. Tente entrar ou recuperar a senha.";
+  }
+  if (msg.includes("invalid login") || code === "invalid_credentials") {
+    return "Email ou senha inválidos.";
+  }
+  return error?.message || "Não foi possível concluir. Tente novamente.";
 }
 
 export async function registerAction(
@@ -99,7 +67,6 @@ export async function registerAction(
     email: formData.get("email"),
     password: formData.get("password"),
   });
-
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
   }
@@ -110,73 +77,25 @@ export async function registerAction(
     return { error: RATE_LIMITED };
   }
 
-  const db = await getDb();
-  await purgeExpiredTokens();
+  const supabase = await createClient();
+  const origin = appUrl();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password: parsed.data.password,
+    options: {
+      data: { name: parsed.data.name },
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/login?verified=1")}`,
+    },
+  });
 
-  const [existing] = await db
-    .select({
-      id: users.id,
-      name: users.name,
-      emailVerified: users.emailVerified,
-    })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  // Never overwrite password on re-register. Always same redirect to avoid
-  // email enumeration (verified → no email; unverified → resend only).
-  if (existing?.emailVerified) {
-    redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
+  if (error) {
+    return { error: authErrorMessage(error) };
   }
 
-  // Cooldown: skip re-send if a verify token was issued in the last 2 minutes.
-  if (existing) {
-    const [recentToken] = await db
-      .select({ id: authTokens.id })
-      .from(authTokens)
-      .where(
-        and(
-          eq(authTokens.userId, existing.id),
-          eq(authTokens.type, "email_verify"),
-          gt(authTokens.createdAt, new Date(Date.now() - 2 * 60 * 1000)),
-        ),
-      )
-      .limit(1);
-    if (recentToken) {
-      redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
-    }
-  }
-
-  let userId = existing?.id;
-  let nameForEmail = existing?.name ?? parsed.data.name;
-
-  if (!existing) {
-    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-    const [created] = await db
-      .insert(users)
-      .values({
-        name: parsed.data.name,
-        email,
-        passwordHash,
-      })
-      .returning();
-    userId = created.id;
-    nameForEmail = created.name;
-  }
-
-  try {
-    const token = await issueToken(userId!, "email_verify", 24);
-    await sendVerificationEmail({
-      to: email,
-      name: nameForEmail,
-      token,
-      ip,
-    });
-  } catch (err) {
-    if (isEmailRateLimited(err)) {
-      return { error: RATE_LIMITED };
-    }
-    throw err;
+  // If email confirmation is disabled, session exists immediately.
+  if (data.user && data.session) {
+    await ensureLocalUser(data.user);
+    redirect("/month");
   }
 
   redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
@@ -186,137 +105,58 @@ export async function resendVerificationAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const emailResult = emailSchema.safeParse(formData.get("email"));
-  if (!emailResult.success) {
-    return { error: emailResult.error.issues[0]?.message ?? "Email inválido." };
+  const emailParsed = emailSchema.safeParse(formData.get("email"));
+  if (!emailParsed.success) {
+    return { error: emailParsed.error.issues[0]?.message ?? "Email inválido." };
   }
 
-  const email = emailResult.data.toLowerCase();
+  const email = emailParsed.data.toLowerCase();
   const ip = await clientIp();
-
-  if (!(await rateLimit(`resend-cooldown:${email}`, 1, 120))) {
-    return { error: RATE_LIMITED };
-  }
-  if (!(await rateLimit(`resend:${ip}:${email}`, 3, 60 * 60))) {
+  if (!(await rateLimit(`resend-verify:${ip}:${email}`, 3, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
-  const db = await getDb();
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
+  const supabase = await createClient();
+  const origin = appUrl();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email,
+    options: {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/login?verified=1")}`,
+    },
+  });
 
-  const generic = {
-    ok: true as const,
-    message:
-      "Se o email existir e ainda não estiver confirmado, enviamos um novo link.",
+  if (error) {
+    return { error: authErrorMessage(error) };
+  }
+
+  return {
+    ok: true,
+    message: "Se o email existir e ainda não estiver confirmado, reenviamos o link.",
   };
-
-  if (!user || user.emailVerified) {
-    return generic;
-  }
-
-  try {
-    const token = await issueToken(user.id, "email_verify", 24);
-    await sendVerificationEmail({ to: email, name: user.name, token, ip });
-  } catch (err) {
-    if (isEmailRateLimited(err)) {
-      return { error: RATE_LIMITED };
-    }
-    throw err;
-  }
-
-  return generic;
-}
-
-export async function verifyEmailAction(token: string): Promise<{
-  ok: boolean;
-  error?: string;
-}> {
-  if (!token || token.length < 20) {
-    return { ok: false, error: "Link inválido." };
-  }
-
-  const db = await getDb();
-  await purgeExpiredTokens();
-  const tokenHash = hashToken(token);
-
-  const [row] = await db
-    .select()
-    .from(authTokens)
-    .where(
-      and(
-        eq(authTokens.tokenHash, tokenHash),
-        eq(authTokens.type, "email_verify"),
-        gt(authTokens.expiresAt, new Date()),
-      ),
-    )
-    .limit(1);
-
-  if (!row) {
-    return {
-      ok: false,
-      error: "Link inválido ou expirado. Solicite um novo email de confirmação.",
-    };
-  }
-
-  await db
-    .update(users)
-    .set({ emailVerified: new Date() })
-    .where(eq(users.id, row.userId));
-
-  await db
-    .delete(authTokens)
-    .where(
-      and(
-        eq(authTokens.userId, row.userId),
-        eq(authTokens.type, "email_verify"),
-      ),
-    );
-
-  return { ok: true };
 }
 
 export async function forgotPasswordAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const emailResult = emailSchema.safeParse(formData.get("email"));
-  if (!emailResult.success) {
-    return { error: emailResult.error.issues[0]?.message ?? "Email inválido." };
+  const emailParsed = emailSchema.safeParse(formData.get("email"));
+  if (!emailParsed.success) {
+    return { error: emailParsed.error.issues[0]?.message ?? "Email inválido." };
   }
 
-  const email = emailResult.data.toLowerCase();
+  const email = emailParsed.data.toLowerCase();
   const ip = await clientIp();
-
-  if (!(await rateLimit(`forgot-email:${email}`, 3, 60 * 60))) {
-    return { error: RATE_LIMITED };
-  }
-  if (!(await rateLimit(`forgot-ip:${ip}`, 10, 60 * 60))) {
+  if (!(await rateLimit(`forgot:${ip}:${email}`, 5, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
-  const db = await getDb();
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-
-  // Always succeed to avoid email enumeration (unless send is rate-limited).
-  if (user) {
-    try {
-      const token = await issueToken(user.id, "password_reset", 1);
-      await sendPasswordResetEmail({ to: email, name: user.name, token, ip });
-    } catch (err) {
-      if (isEmailRateLimited(err)) {
-        return { error: RATE_LIMITED };
-      }
-      throw err;
-    }
-  }
+  const supabase = await createClient();
+  const origin = appUrl();
+  // Always show success to avoid email enumeration.
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/reset-password")}`,
+  });
 
   return {
     ok: true,
@@ -329,78 +169,42 @@ export async function resetPasswordAction(
   _prev: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const parsed = resetSchema.safeParse({
-    token: formData.get("token"),
-    password: formData.get("password"),
-  });
-
+  const parsed = z
+    .object({
+      password: z
+        .string()
+        .min(8, "A senha deve ter pelo menos 8 caracteres.")
+        .max(100),
+    })
+    .safeParse({ password: formData.get("password") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+    return { error: parsed.error.issues[0]?.message ?? "Senha inválida." };
   }
 
-  const db = await getDb();
-  await purgeExpiredTokens();
-  const tokenHash = hashToken(parsed.data.token);
-
-  const [row] = await db
-    .select()
-    .from(authTokens)
-    .where(
-      and(
-        eq(authTokens.tokenHash, tokenHash),
-        eq(authTokens.type, "password_reset"),
-        gt(authTokens.expiresAt, new Date()),
-      ),
-    )
-    .limit(1);
-
-  if (!row) {
+  const supabase = await createClient();
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) {
     return {
-      error: "Link inválido ou expirado. Solicite uma nova redefinição.",
+      error:
+        "Sessão de redefinição expirada. Solicite um novo link em “Esqueceu a senha?”.",
     };
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-  const [current] = await db
-    .select({ sessionVersion: users.sessionVersion })
-    .from(users)
-    .where(eq(users.id, row.userId))
-    .limit(1);
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) {
+    return { error: authErrorMessage(error) };
+  }
 
-  await db
-    .update(users)
-    .set({
-      passwordHash,
-      sessionVersion: (current?.sessionVersion ?? 0) + 1,
-    })
-    .where(eq(users.id, row.userId));
-
-  await db
-    .delete(authTokens)
-    .where(
-      and(
-        eq(authTokens.userId, row.userId),
-        eq(authTokens.type, "password_reset"),
-      ),
-    );
-
+  await supabase.auth.signOut();
   redirect("/login?reset=1");
 }
 
-/** Bump sessionVersion then clear Auth.js cookie — invalidates stolen JWTs. */
 export async function signOutAndInvalidate() {
-  const sessionUser = await requireUser();
-  const db = await getDb();
-  const [current] = await db
-    .select({ sessionVersion: users.sessionVersion })
-    .from(users)
-    .where(eq(users.id, sessionUser.id))
-    .limit(1);
-  await db
-    .update(users)
-    .set({ sessionVersion: (current?.sessionVersion ?? 0) + 1 })
-    .where(eq(users.id, sessionUser.id));
-  await signOut({ redirectTo: "/login" });
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }
 
 /** Permanently delete the signed-in user and all cascaded financial data. */
@@ -411,20 +215,17 @@ export async function deleteMyAccount(formData: FormData) {
   const sessionUser = await requireUser();
   const db = await getDb();
   await db.delete(users).where(eq(users.id, sessionUser.id));
-  await signOut({ redirectTo: "/login" });
-}
 
-async function bumpSessionVersion(userId: string) {
-  const db = await getDb();
-  const [current] = await db
-    .select({ sessionVersion: users.sessionVersion })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-  await db
-    .update(users)
-    .set({ sessionVersion: (current?.sessionVersion ?? 0) + 1 })
-    .where(eq(users.id, userId));
+  try {
+    const admin = createAdminClient();
+    await admin.auth.admin.deleteUser(sessionUser.id);
+  } catch (err) {
+    console.error("[deleteMyAccount] Supabase delete failed:", err);
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/login");
 }
 
 export async function updateProfileNameAction(
@@ -447,6 +248,9 @@ export async function updateProfileNameAction(
     .update(users)
     .set({ name: name.data })
     .where(eq(users.id, user.id));
+
+  const supabase = await createClient();
+  await supabase.auth.updateUser({ data: { name: name.data } });
 
   revalidatePath("/profile");
   revalidatePath("/month");
@@ -477,87 +281,29 @@ export async function updateProfileEmailAction(
   }
 
   const email = parsed.data.email.toLowerCase();
-  const ip = await clientIp();
-  const db = await getDb();
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, user.id))
-    .limit(1);
-  if (!row) {
-    return { error: "Conta não encontrada." };
-  }
-
-  if (!(await bcrypt.compare(parsed.data.password, row.passwordHash))) {
-    return { error: "Senha atual incorreta." };
-  }
-
-  if (email === row.email.toLowerCase()) {
+  if (email === user.email.toLowerCase()) {
     return { error: "Este já é o seu email atual." };
   }
 
-  const [taken] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, email))
-    .limit(1);
-  if (taken) {
-    return { error: "Este email já está em uso." };
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: parsed.data.password,
+  });
+  if (signInError) {
+    return { error: "Senha atual incorreta." };
   }
 
-  // Without Brevo, auto-verify so the user is not locked out of login.
-  if (!hasEmailProvider()) {
-    await db
-      .update(users)
-      .set({
-        email,
-        emailVerified: new Date(),
-      })
-      .where(eq(users.id, user.id));
+  const origin = appUrl();
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent("/profile")}`,
+    },
+  );
 
-    revalidatePath("/profile");
-    return {
-      ok: true,
-      message:
-        "Email atualizado. (Envio de confirmação ainda não configurado — conta já liberada para login.)",
-    };
-  }
-
-  const previousEmail = row.email;
-  const previousVerified = row.emailVerified;
-
-  await db
-    .update(users)
-    .set({
-      email,
-      emailVerified: null,
-    })
-    .where(eq(users.id, user.id));
-
-  try {
-    const token = await issueToken(user.id, "email_verify", 24);
-    await sendVerificationEmail({
-      to: email,
-      name: row.name,
-      token,
-      ip,
-    });
-  } catch (err) {
-    console.error("[profile-email] send failed, reverting:", err);
-    await db
-      .update(users)
-      .set({
-        email: previousEmail,
-        emailVerified: previousVerified,
-      })
-      .where(eq(users.id, user.id));
-    if (isEmailRateLimited(err)) {
-      return { error: RATE_LIMITED };
-    }
-    return {
-      error:
-        "Não foi possível enviar o email de confirmação. Nenhuma alteração foi aplicada.",
-    };
+  if (error) {
+    return { error: authErrorMessage(error) };
   }
 
   revalidatePath("/profile");
@@ -565,7 +311,7 @@ export async function updateProfileEmailAction(
   return {
     ok: true,
     message:
-      "Email atualizado. Enviamos um link de confirmação para o novo endereço.",
+      "Enviamos um link de confirmação para o novo email. O endereço muda após a confirmação.",
   };
 }
 
@@ -599,28 +345,22 @@ export async function updateProfilePasswordAction(
     return { error: RATE_LIMITED };
   }
 
-  const db = await getDb();
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, user.id))
-    .limit(1);
-  if (!row) {
-    return { error: "Conta não encontrada." };
-  }
-
-  if (!(await bcrypt.compare(parsed.data.currentPassword, row.passwordHash))) {
+  const supabase = await createClient();
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: parsed.data.currentPassword,
+  });
+  if (signInError) {
     return { error: "Senha atual incorreta." };
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
-  await db
-    .update(users)
-    .set({ passwordHash })
-    .where(eq(users.id, user.id));
-  await bumpSessionVersion(user.id);
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) {
+    return { error: authErrorMessage(error) };
+  }
 
-  // Clear JWT so /login does not bounce back into requireUser (redirect loop).
-  await signOut({ redirectTo: "/login?password=1" });
-  return { ok: true };
+  await supabase.auth.signOut();
+  redirect("/login?password=1");
 }

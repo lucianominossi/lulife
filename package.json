@@ -13,18 +13,18 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts",
     "db:reset": "rm -rf .data && tsx --env-file=.env.local src/db/seed.ts",
-    "db:migrate-to-neon": "tsx src/db/migrate-pglite-to-neon.ts"
+    "db:migrate-to-neon": "tsx src/db/migrate-pglite-to-neon.ts",
+    "auth:migrate-users": "tsx --env-file=.env.local scripts/migrate-users-to-supabase.ts"
   },
   "dependencies": {
-    "@auth/drizzle-adapter": "^1.9.1",
     "@electric-sql/pglite": "^0.3.3",
     "@neondatabase/serverless": "^1.0.1",
-    "bcryptjs": "^3.0.2",
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7",
     "drizzle-orm": "^0.44.2",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.24.0",
     "next": "^15.3.4",
-    "next-auth": "^5.0.0-beta.28",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "recharts": "^2.15.3",
@@ -34,7 +34,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@tailwindcss/postcss": "^4.1.10",
-    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.15.32",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",

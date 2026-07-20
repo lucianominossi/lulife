@@ -1,20 +1,26 @@
 # Lulife
 
-Portal web de controle financeiro pessoal — substitui a planilha Excel.
+Portal web de controle financeiro pessoal.
 
 ## Stack
 
 - Next.js 15 (App Router) + TypeScript + Tailwind
-- Auth.js (credentials + JWT `sessionVersion`)
+- **Supabase Auth** (email/senha, confirmação e reset)
 - Drizzle ORM + **Neon Postgres** (produção) ou **PGlite** local (sem `DATABASE_URL`)
 - Recharts
 
 ## Desenvolvimento local
 
+1. Crie um projeto free no [Supabase](https://supabase.com) e copie URL + anon key + service role.
+2. Em **Authentication → URL Configuration**:
+   - Site URL: `http://localhost:3000`
+   - Redirect URLs: `http://localhost:3000/auth/callback`
+3. Habilite email/senha e confirmação de email (templates no dashboard).
+
 ```bash
 npm install
-cp .env.example .env.local   # se ainda não existir
-npm run db:seed
+cp .env.example .env.local   # preencha as variáveis Supabase
+npm run db:seed              # cria usuário no Auth + espelho local
 npm run dev
 ```
 
@@ -27,9 +33,15 @@ Credenciais padrão do seed (`.env.local`):
 
 Sem `DATABASE_URL`, os dados ficam em `.data/pglite/`.
 
-## Deploy (Vercel Hobby + Neon Free)
+### Migrar usuários já existentes (Auth.js → Supabase)
 
-MVP sem recursos pagos na Vercel (no máximo domínio próprio), adequado até ~1k usuários:
+```bash
+npm run auth:migrate-users
+```
+
+Importa `users` locais com o **mesmo UUID** e `password_hash` bcrypt.
+
+## Deploy (Vercel Hobby + Neon Free)
 
 1. Crie um projeto no [Neon](https://neon.tech) (free) e copie a connection string.
 2. Importe o repo no Vercel (Hobby).
@@ -38,22 +50,22 @@ MVP sem recursos pagos na Vercel (no máximo domínio próprio), adequado até ~
 | Variável | Descrição |
 |----------|-----------|
 | `DATABASE_URL` | Connection string Neon (`sslmode=require`) |
-| `AUTH_SECRET` | `openssl rand -base64 32` |
-| `AUTH_TRUST_HOST` | `true` |
-| `AUTH_URL` | URL pública (emails) |
-| `BREVO_API_KEY` | API key Brevo (opcional; sem ela, links vão aos logs) |
-| `EMAIL_FROM` | Remetente verificado no Brevo, ex. `Lulife <seu@gmail.com>` |
+| `NEXT_PUBLIC_SUPABASE_URL` | URL do projeto Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon/public key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role (só server/scripts) |
+| `NEXT_PUBLIC_APP_URL` | URL pública do app |
 | `SEED_EMAIL` / `SEED_PASSWORD` / `SEED_NAME` | Usuário inicial |
 | `CRON_SECRET` | Protege `/api/cron/recurring` |
 
-4. Aplique o schema (`drizzle/*.sql` ou `db:push`) e rode o seed uma vez.
-5. Cron diário em `vercel.json` → `/api/cron/recurring` com `Authorization: Bearer $CRON_SECRET`.
+4. No Supabase, adicione a URL de produção em Site URL / Redirect URLs (`…/auth/callback`).
+5. Aplique o schema (`drizzle/*.sql` ou `db:push`) e rode o seed (ou o script de migração) uma vez.
+6. Cron diário em `vercel.json` → `/api/cron/recurring` com `Authorization: Bearer $CRON_SECRET`.
 
 Rate limiting usa tabela Postgres (`rate_limits`) — sem Redis/KV pagos.
 
 ## Segurança (MVP)
 
-Já incluso: ownership nas mutations, `sessionVersion` no reset/logout, recorrentes idempotentes, headers HTTP, export/exclusão LGPD, teto de magnitude em valores (negativos/reembolsos permitidos).
+Já incluso: ownership nas mutations, sessões Supabase, recorrentes idempotentes, headers HTTP, export/exclusão LGPD, teto de magnitude em valores (negativos/reembolsos permitidos).
 
 **Adiado até >1k usuários / infra paga:** 2FA, criptografia de campo (além do disco do Neon), audit trail imutável, rate limit em edge Redis.
 
@@ -72,8 +84,9 @@ Veja [/privacy](/privacy) no app.
 ```
 src/
   app/(app)/     # telas autenticadas
-  app/api/       # auth, export, cron
+  app/api/       # export, cron
+  app/auth/      # callback OAuth/email Supabase
   db/            # schema + client
-  lib/           # finance, dates, recurring, rate-limit
+  lib/supabase/  # clients SSR + ensureLocalUser
   components/
 ```

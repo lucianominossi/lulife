@@ -18,8 +18,9 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
-  passwordHash: text("password_hash").notNull(),
-  /** Bumped on password reset so existing JWTs are rejected. */
+  /** Legacy local auth hash; unused after Supabase Auth (nullable for new users). */
+  passwordHash: text("password_hash"),
+  /** Legacy Auth.js invalidation; unused after Supabase Auth. */
   sessionVersion: integer("session_version").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });

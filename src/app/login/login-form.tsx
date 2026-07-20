@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { safeCallbackUrl } from "@/lib/safe-callback-url";
 
 export function LoginForm() {
@@ -19,26 +19,22 @@ export function LoginForm() {
     setError(null);
     setUnverifiedEmail(null);
     const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email"));
+    const email = String(fd.get("email")).trim().toLowerCase();
+    const password = String(fd.get("password"));
+
     try {
-      const res = await signIn("credentials", {
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
-        password: String(fd.get("password")),
-        redirect: false,
+        password,
       });
 
-      if (res?.error) {
+      if (signInError) {
         setLoading(false);
-        const code = (res as { code?: string }).code;
-        if (code === "rate_limited" || res.error === "rate_limited") {
-          setError(
-            "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
-          );
-          return;
-        }
+        const msg = (signInError.message || "").toLowerCase();
         if (
-          code === "email_not_verified" ||
-          res.error === "email_not_verified"
+          msg.includes("email not confirmed") ||
+          msg.includes("not confirmed")
         ) {
           setUnverifiedEmail(email);
           setError(
@@ -50,7 +46,6 @@ export function LoginForm() {
         return;
       }
 
-      // Keep button loading through navigation — Neon dashboard can take a few seconds.
       router.replace(safeCallbackUrl(search.get("callbackUrl")));
       router.refresh();
     } catch {
@@ -74,6 +69,11 @@ export function LoginForm() {
       {search.get("verified") === "1" && (
         <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
           Email confirmado. Você já pode entrar.
+        </p>
+      )}
+      {search.get("error") === "auth" && !error && (
+        <p className="text-sm text-[var(--color-danger)]" role="alert">
+          Não foi possível confirmar o link. Tente novamente.
         </p>
       )}
       <label className="block space-y-1.5">

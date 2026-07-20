@@ -20,14 +20,13 @@ export default async function CheckEmailPage({
           {email ? (
             <>
               Verifique a caixa de entrada de{" "}
-              <strong className="text-white">{email}</strong>. Em desenvolvimento,
-              o link também aparece no terminal do servidor se Resend não
-              estiver configurado.
+              <strong className="text-white">{email}</strong> (e o spam). O email
+              é enviado pelo Supabase Auth.
             </>
           ) : (
             <>
-              Verifique sua caixa de entrada. Em desenvolvimento, o link também
-              aparece no terminal do servidor se Resend não estiver configurado.
+              Verifique sua caixa de entrada (e o spam). O email é enviado pelo
+              Supabase Auth.
             </>
           )}
         </p>

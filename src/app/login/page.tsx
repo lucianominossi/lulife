@@ -1,9 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { auth, signOut } from "@/auth";
 import { AuthShell } from "@/components/auth-shell";
 import { safeCallbackUrl } from "@/lib/safe-callback-url";
-import { isSessionCurrent } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage({
@@ -12,16 +11,15 @@ export default async function LoginPage({
   searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const session = await auth();
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
 
-  if (session?.user?.id) {
-    const current = await isSessionCurrent();
-    // Stale JWT after password change/reset → clear cookie or Safari loops.
-    if (!current || params.error === "session") {
-      await signOut({ redirect: false });
-    } else {
-      redirect(safeCallbackUrl(params.callbackUrl));
-    }
+  if (data.user && params.error !== "session") {
+    redirect(safeCallbackUrl(params.callbackUrl));
+  }
+
+  if (data.user && params.error === "session") {
+    await supabase.auth.signOut();
   }
 
   return (

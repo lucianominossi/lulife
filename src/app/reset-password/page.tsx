@@ -2,19 +2,17 @@ import Link from "next/link";
 import { resetPasswordAction } from "@/app/actions/auth";
 import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/auth-shell";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function ResetPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ token?: string }>;
-}) {
-  const { token } = await searchParams;
+export default async function ResetPasswordPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
 
-  if (!token) {
+  if (!data.user) {
     return (
       <AuthShell
-        title="Link inválido"
-        subtitle="Este link de redefinição está incompleto."
+        title="Link inválido ou expirado"
+        subtitle="Abra o link do email novamente ou solicite um novo."
       >
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">
           <Link
@@ -38,7 +36,6 @@ export default async function ResetPasswordPage({
         submitLabel="Salvar nova senha"
         pendingLabel="Salvando…"
       >
-        <input type="hidden" name="token" value={token} />
         <label className="block space-y-1.5">
           <span className="text-sm text-[var(--color-ink-muted)]">
             Nova senha

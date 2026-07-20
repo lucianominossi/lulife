@@ -100,7 +100,7 @@ async function main() {
     email: u.email as string,
     emailVerified: u.email_verified ? new Date(String(u.email_verified)) : null,
     image: (u.image as string) ?? null,
-    passwordHash: u.password_hash as string,
+    passwordHash: u.password_hash as string | null,
     sessionVersion: Number(u.session_version ?? 0),
     createdAt: new Date(String(u.created_at)),
   }));

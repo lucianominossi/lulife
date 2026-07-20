@@ -26,7 +26,7 @@ async function migratePglite(client: PGlite) {
       email TEXT NOT NULL UNIQUE,
       email_verified TIMESTAMPTZ,
       image TEXT,
-      password_hash TEXT NOT NULL,
+      password_hash TEXT,
       session_version INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -141,6 +141,7 @@ async function migratePglite(client: PGlite) {
   `);
   await client.exec(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
     -- Drop duplicate recurring rows before unique indexes (pre-fix races)
     DELETE FROM transactions
