@@ -6,6 +6,8 @@ import { updateIncome, updateTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
+import { SubmitButton } from "@/components/submit-button";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import {
   addMonths,
   currentYearMonth,
@@ -214,9 +216,7 @@ export function EditTransactionButton({
               name="notes"
               defaultValue={record.notes ?? ""}
             />
-            <button type="submit" className="btn-primary sm:col-span-2">
-              Salvar alterações
-            </button>
+            <SubmitButton>Salvar alterações</SubmitButton>
           </form>
         </Modal>
       )}
@@ -310,9 +310,7 @@ export function EditIncomeButton({
               type="date"
               defaultValue={record.date ?? ""}
             />
-            <button type="submit" className="btn-primary sm:col-span-2">
-              Salvar alterações
-            </button>
+            <SubmitButton>Salvar alterações</SubmitButton>
           </form>
         </Modal>
       )}
@@ -335,19 +333,14 @@ function Modal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+  useBodyScrollLock(true);
 
+  useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKeyDown);
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKeyDown);
-    };
+    return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
   if (!mounted) return null;
@@ -365,7 +358,7 @@ function Modal({
         aria-label="Fechar"
         onClick={onClose}
       />
-      <div className="panel relative z-10 flex max-h-[min(90dvh,720px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+      <div className="panel relative z-10 flex max-h-[min(92dvh,720px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
           <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
           <button
@@ -376,7 +369,9 @@ function Modal({
             Fechar
           </button>
         </div>
-        <div className="overflow-y-auto px-6 py-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y px-6 py-5 [-webkit-overflow-scrolling:touch]">
+          {children}
+        </div>
       </div>
     </div>,
     document.body,

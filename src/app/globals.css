@@ -66,6 +66,17 @@ body {
   min-height: 100%;
 }
 
+html.scroll-locked {
+  overscroll-behavior: none;
+}
+
+@media (max-width: 1023px) {
+  body {
+    /* Fixed attachment causes rubber-band / PTR fights on mobile scroll */
+    background-attachment: scroll;
+  }
+}
+
 body {
   font-family: var(--font-sans);
   color: var(--ink);

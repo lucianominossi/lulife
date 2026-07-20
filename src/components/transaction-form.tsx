@@ -5,6 +5,7 @@ import { createTransaction } from "@/app/actions";
 import { CategoryPicker } from "@/components/category-picker";
 import { CurrencyInput } from "@/components/currency-input";
 import { ExpenseRepeatFields } from "@/components/expense-repeat-fields";
+import { SubmitButton } from "@/components/submit-button";
 import { SuccessToast, useSuccessToast } from "@/components/success-toast";
 import {
   invoiceMonthFromDate,
@@ -154,9 +155,7 @@ export function TransactionForm({
         placeholder="Obs. (opcional)"
         className="input-field"
       />
-      <button type="submit" className="btn-primary w-full">
-        Salvar
-      </button>
+      <SubmitButton className="btn-primary w-full">Salvar</SubmitButton>
     </form>
     <SuccessToast message={toast} onClose={clearToast} />
     </>
