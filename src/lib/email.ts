@@ -1,5 +1,4 @@
 import { createHash, randomBytes } from "node:crypto";
-import { Resend } from "resend";
 
 export function getAppUrl() {
   const fromEnv =
@@ -20,9 +19,19 @@ export function hashToken(raw: string) {
   return createHash("sha256").update(raw).digest("hex");
 }
 
-/** True when Resend is configured for real delivery. */
+/** True when Brevo is configured for real delivery. */
 export function hasEmailProvider() {
-  return Boolean(process.env.RESEND_API_KEY?.trim());
+  return Boolean(process.env.BREVO_API_KEY?.trim());
+}
+
+function parseFromAddress(raw: string): { name: string; email: string } {
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(.*)<([^>]+)>$/);
+  if (match) {
+    const name = match[1].trim().replace(/^"|"$/g, "") || "Lulife";
+    return { name, email: match[2].trim() };
+  }
+  return { name: "Lulife", email: trimmed };
 }
 
 async function sendEmail({
@@ -36,23 +45,40 @@ async function sendEmail({
   html: string;
   text: string;
 }) {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from =
-    process.env.EMAIL_FROM?.trim() || "Lulife <onboarding@resend.dev>";
+  const apiKey = process.env.BREVO_API_KEY?.trim();
+  const fromRaw =
+    process.env.EMAIL_FROM?.trim() || "Lulife <noreply@example.com>";
+  const sender = parseFromAddress(fromRaw);
 
   if (!apiKey) {
-    // MVP without Resend: deliver via server logs (Vercel Runtime Logs).
+    // MVP without Brevo: deliver via server logs (Vercel Runtime Logs).
     console.info(`[email:console] To: ${to} | Subject: ${subject}\n${text}`);
     return { ok: true as const, mode: "console" as const };
   }
 
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({ from, to, subject, html, text });
-  if (result.error) {
-    console.error("[email] Resend error:", result.error);
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "api-key": apiKey,
+    },
+    body: JSON.stringify({
+      sender: { name: sender.name, email: sender.email },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text,
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("[email] Brevo error:", response.status, detail);
     throw new Error("Falha ao enviar email.");
   }
-  return { ok: true as const, mode: "resend" as const };
+
+  return { ok: true as const, mode: "brevo" as const };
 }
 
 export async function sendVerificationEmail({

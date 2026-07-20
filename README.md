@@ -41,8 +41,8 @@ MVP sem recursos pagos na Vercel (no máximo domínio próprio), adequado até ~
 | `AUTH_SECRET` | `openssl rand -base64 32` |
 | `AUTH_TRUST_HOST` | `true` |
 | `AUTH_URL` | URL pública (emails) |
-| `RESEND_API_KEY` | **Obrigatório em produção** (emails) |
-| `EMAIL_FROM` | Remetente Resend |
+| `BREVO_API_KEY` | API key Brevo (opcional; sem ela, links vão aos logs) |
+| `EMAIL_FROM` | Remetente verificado no Brevo, ex. `Lulife <seu@gmail.com>` |
 | `SEED_EMAIL` / `SEED_PASSWORD` / `SEED_NAME` | Usuário inicial |
 | `CRON_SECRET` | Protege `/api/cron/recurring` |
 

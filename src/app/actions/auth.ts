@@ -446,7 +446,7 @@ export async function updateProfileEmailAction(
     return { error: "Este email já está em uso." };
   }
 
-  // Without Resend, auto-verify so the user is not locked out of login.
+  // Without Brevo, auto-verify so the user is not locked out of login.
   if (!hasEmailProvider()) {
     await db
       .update(users)
