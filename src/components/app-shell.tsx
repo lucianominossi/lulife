@@ -114,6 +114,8 @@ function NavLinks({
 }
 
 function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
+  const pathname = usePathname();
+  const active = pathname === "/profile" || pathname.startsWith("/profile/");
   const initials = (name || email || "U")
     .split(" ")
     .map((p) => p[0])
@@ -123,7 +125,15 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] px-3 py-3">
+      <Link
+        href="/profile"
+        className={`flex items-center gap-3 rounded-xl border px-3 py-3 transition ${
+          active
+            ? "border-[#8B5CF6]/40 bg-[var(--accent-soft)]"
+            : "border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.06]"
+        }`}
+        aria-current={active ? "page" : undefined}
+      >
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[#C4B5FD]">
           {initials}
         </span>
@@ -137,7 +147,11 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
             </p>
           )}
         </div>
-      </div>
+        <ChevronRight
+          size={16}
+          className="shrink-0 text-[var(--color-sidebar-muted)]"
+        />
+      </Link>
       <form action={signOutAndInvalidate}>
         <button
           type="submit"

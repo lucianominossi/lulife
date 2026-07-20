@@ -2,6 +2,7 @@
 
 import bcrypt from "bcryptjs";
 import { and, eq, gt, lt } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/email";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
 import { requireUser } from "@/lib/session";
+
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(80),
@@ -351,4 +353,172 @@ export async function deleteMyAccount(formData: FormData) {
   const db = await getDb();
   await db.delete(users).where(eq(users.id, sessionUser.id));
   await signOut({ redirectTo: "/login" });
+}
+
+async function bumpSessionVersion(userId: string) {
+  const db = await getDb();
+  const [current] = await db
+    .select({ sessionVersion: users.sessionVersion })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  await db
+    .update(users)
+    .set({ sessionVersion: (current?.sessionVersion ?? 0) + 1 })
+    .where(eq(users.id, userId));
+}
+
+export async function updateProfileNameAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const name = z
+    .string()
+    .trim()
+    .min(2, "Informe seu nome.")
+    .max(80)
+    .safeParse(formData.get("name"));
+  if (!name.success) {
+    return { error: name.error.issues[0]?.message ?? "Nome inválido." };
+  }
+
+  const user = await requireUser();
+  const db = await getDb();
+  await db
+    .update(users)
+    .set({ name: name.data })
+    .where(eq(users.id, user.id));
+
+  revalidatePath("/profile");
+  revalidatePath("/month");
+
+  return { ok: true, message: "Nome atualizado." };
+}
+
+export async function updateProfileEmailAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = z
+    .object({
+      email: emailSchema,
+      password: z.string().min(1, "Informe a senha atual."),
+    })
+    .safeParse({
+      email: formData.get("email"),
+      password: formData.get("password"),
+    });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const user = await requireUser();
+  if (!(await throttleAuth("profile-email", user.email))) {
+    return { error: RATE_LIMITED };
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1);
+  if (!row) {
+    return { error: "Conta não encontrada." };
+  }
+
+  if (!(await bcrypt.compare(parsed.data.password, row.passwordHash))) {
+    return { error: "Senha atual incorreta." };
+  }
+
+  if (email === row.email.toLowerCase()) {
+    return { error: "Este já é o seu email atual." };
+  }
+
+  const [taken] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (taken) {
+    return { error: "Este email já está em uso." };
+  }
+
+  await db
+    .update(users)
+    .set({
+      email,
+      emailVerified: null,
+    })
+    .where(eq(users.id, user.id));
+
+  const token = await issueToken(user.id, "email_verify", 24);
+  await sendVerificationEmail({
+    to: email,
+    name: row.name,
+    token,
+  });
+
+  revalidatePath("/profile");
+
+  return {
+    ok: true,
+    message:
+      "Email atualizado. Enviamos um link de confirmação para o novo endereço.",
+  };
+}
+
+export async function updateProfilePasswordAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = z
+    .object({
+      currentPassword: z.string().min(1, "Informe a senha atual."),
+      password: z
+        .string()
+        .min(8, "A nova senha deve ter pelo menos 8 caracteres.")
+        .max(100),
+      confirmPassword: z.string().min(1, "Confirme a nova senha."),
+    })
+    .safeParse({
+      currentPassword: formData.get("currentPassword"),
+      password: formData.get("password"),
+      confirmPassword: formData.get("confirmPassword"),
+    });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+  if (parsed.data.password !== parsed.data.confirmPassword) {
+    return { error: "A confirmação não confere com a nova senha." };
+  }
+
+  const user = await requireUser();
+  if (!(await throttleAuth("profile-password", user.email))) {
+    return { error: RATE_LIMITED };
+  }
+
+  const db = await getDb();
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.id, user.id))
+    .limit(1);
+  if (!row) {
+    return { error: "Conta não encontrada." };
+  }
+
+  if (!(await bcrypt.compare(parsed.data.currentPassword, row.passwordHash))) {
+    return { error: "Senha atual incorreta." };
+  }
+
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  await db
+    .update(users)
+    .set({ passwordHash })
+    .where(eq(users.id, user.id));
+  await bumpSessionVersion(user.id);
+
+  redirect("/login?password=1");
 }

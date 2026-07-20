@@ -69,6 +69,11 @@ function LoginForm() {
           Senha atualizada. Entre com a nova senha.
         </p>
       )}
+      {search.get("password") === "1" && (
+        <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
+          Senha alterada. Entre com a nova senha.
+        </p>
+      )}
       {search.get("verified") === "1" && (
         <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
           Email confirmado. Você já pode entrar.

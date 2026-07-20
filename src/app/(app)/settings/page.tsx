@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { eq } from "drizzle-orm";
 import {
   createAccount,
@@ -6,10 +5,6 @@ import {
   deleteAccount,
   deleteCategory,
 } from "@/app/actions";
-import {
-  deleteMyAccount,
-  signOutAndInvalidate,
-} from "@/app/actions/auth";
 import { BudgetSection } from "@/components/budget-section";
 import { getDb } from "@/db";
 import { accounts, budgets, categories } from "@/db/schema";
@@ -30,21 +25,11 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-[32px] font-bold tracking-tight">Cadastros</h1>
-          <p className="mt-1 text-[var(--color-ink-muted)]">
-            Categorias, contas e orçamento mensal
-          </p>
-        </div>
-        <form action={signOutAndInvalidate}>
-          <button
-            type="submit"
-            className="rounded-xl border border-[#F43F5E]/25 px-4 py-2 text-sm font-medium text-[#F43F5E] transition hover:bg-[#F43F5E]/10"
-          >
-            Sair da conta
-          </button>
-        </form>
+      <header>
+        <h1 className="text-[32px] font-bold tracking-tight">Cadastros</h1>
+        <p className="mt-1 text-[var(--color-ink-muted)]">
+          Categorias, contas e orçamento mensal
+        </p>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
@@ -127,47 +112,6 @@ export default async function SettingsPage() {
       </div>
 
       <BudgetSection categories={cats} budgets={buds} />
-
-      <section className="panel space-y-4 p-5">
-        <h2 className="font-display text-lg font-semibold">
-          Privacidade e dados
-        </h2>
-        <p className="text-sm text-[var(--color-ink-muted)]">
-          Exporte um JSON com seus lançamentos ou exclua permanentemente a
-          conta. Veja também a{" "}
-          <Link href="/privacy" className="text-[#C4B5FD] hover:underline">
-            política de privacidade
-          </Link>
-          .
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <a href="/api/export" className="btn-primary px-4 py-2 text-sm">
-            Exportar meus dados
-          </a>
-        </div>
-        <form action={deleteMyAccount} className="space-y-3 border-t border-[var(--color-border)] pt-4">
-          <p className="text-sm text-[#F43F5E]">
-            Excluir a conta remove categorias, contas, lançamentos, orçamentos,
-            investimentos e recorrências. Esta ação não pode ser desfeita.
-          </p>
-          <label className="flex items-start gap-2 text-sm text-[var(--color-ink-muted)]">
-            <input
-              type="checkbox"
-              name="confirm"
-              required
-              className="mt-1"
-            />
-            Confirmo que quero excluir permanentemente minha conta e todos os
-            dados.
-          </label>
-          <button
-            type="submit"
-            className="rounded-xl border border-[#F43F5E]/40 bg-[#F43F5E]/10 px-4 py-2 text-sm font-medium text-[#F43F5E] transition hover:bg-[#F43F5E]/20"
-          >
-            Excluir minha conta
-          </button>
-        </form>
-      </section>
     </div>
   );
 }
