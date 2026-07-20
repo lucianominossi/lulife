@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { rateLimit } from "@/lib/rate-limit";
 
 export function getAppUrl() {
   const fromEnv =
@@ -24,6 +25,42 @@ export function hasEmailProvider() {
   return Boolean(process.env.BREVO_API_KEY?.trim());
 }
 
+export class EmailRateLimitedError extends Error {
+  constructor() {
+    super("EMAIL_RATE_LIMITED");
+    this.name = "EmailRateLimitedError";
+  }
+}
+
+/**
+ * Multi-layer limits before calling Brevo (dest / IP / global).
+ * Only increments when a real provider send is about to happen.
+ */
+export async function assertCanSendEmail({
+  to,
+  ip,
+}: {
+  to: string;
+  ip: string;
+}) {
+  const email = to.toLowerCase();
+  const clientIp = ip || "unknown";
+
+  const checks: Array<[string, number, number]> = [
+    [`email-to:${email}`, 3, 60 * 60],
+    [`email-to-day:${email}`, 8, 24 * 60 * 60],
+    [`email-ip:${clientIp}`, 10, 60 * 60],
+    [`email-ip-day:${clientIp}`, 40, 24 * 60 * 60],
+    [`email-global-day`, 200, 24 * 60 * 60],
+  ];
+
+  for (const [key, limit, windowSec] of checks) {
+    if (!(await rateLimit(key, limit, windowSec))) {
+      throw new EmailRateLimitedError();
+    }
+  }
+}
+
 function parseFromAddress(raw: string): { name: string; email: string } {
   const trimmed = raw.trim();
   const match = trimmed.match(/^(.*)<([^>]+)>$/);
@@ -39,11 +76,13 @@ async function sendEmail({
   subject,
   html,
   text,
+  ip,
 }: {
   to: string;
   subject: string;
   html: string;
   text: string;
+  ip?: string;
 }) {
   const apiKey = process.env.BREVO_API_KEY?.trim();
   const fromRaw =
@@ -55,6 +94,8 @@ async function sendEmail({
     console.info(`[email:console] To: ${to} | Subject: ${subject}\n${text}`);
     return { ok: true as const, mode: "console" as const };
   }
+
+  await assertCanSendEmail({ to, ip: ip ?? "unknown" });
 
   const response = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
@@ -85,10 +126,12 @@ export async function sendVerificationEmail({
   to,
   name,
   token,
+  ip,
 }: {
   to: string;
   name: string;
   token: string;
+  ip?: string;
 }) {
   const url = `${getAppUrl()}/verify-email?token=${encodeURIComponent(token)}`;
   const subject = "Confirme seu email — Lulife";
@@ -106,17 +149,19 @@ export async function sendVerificationEmail({
       <p style="margin:16px 0 0;font-size:12px;color:#6B7280">O link expira em 24 horas.</p>
     </div>
   `;
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({ to, subject, html, text, ip });
 }
 
 export async function sendPasswordResetEmail({
   to,
   name,
   token,
+  ip,
 }: {
   to: string;
   name: string;
   token: string;
+  ip?: string;
 }) {
   const url = `${getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`;
   const subject = "Redefinir senha — Lulife";
@@ -134,7 +179,7 @@ export async function sendPasswordResetEmail({
       <p style="margin:16px 0 0;font-size:12px;color:#6B7280">O link expira em 1 hora. Se você não pediu isso, ignore este email.</p>
     </div>
   `;
-  return sendEmail({ to, subject, html, text });
+  return sendEmail({ to, subject, html, text, ip });
 }
 
 function escapeHtml(value: string) {

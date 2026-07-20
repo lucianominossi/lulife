@@ -11,6 +11,7 @@ import { getDb } from "@/db";
 import { authTokens, users } from "@/db/schema";
 import {
   createRawToken,
+  EmailRateLimitedError,
   hashToken,
   hasEmailProvider,
   sendPasswordResetEmail,
@@ -77,10 +78,16 @@ async function issueToken(
   return raw;
 }
 
-async function throttleAuth(bucket: string, email: string) {
+async function clientIp() {
   const h = await headers();
-  const ip = await clientIpFromHeaders(h);
-  return rateLimit(`${bucket}:${ip}:${email}`, 5, 60 * 60);
+  return clientIpFromHeaders(h);
+}
+
+function isEmailRateLimited(err: unknown) {
+  return (
+    err instanceof EmailRateLimitedError ||
+    (err instanceof Error && err.name === "EmailRateLimitedError")
+  );
 }
 
 export async function registerAction(
@@ -98,7 +105,8 @@ export async function registerAction(
   }
 
   const email = parsed.data.email.toLowerCase();
-  if (!(await throttleAuth("register", email))) {
+  const ip = await clientIp();
+  if (!(await rateLimit(`register:${ip}:${email}`, 5, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
@@ -121,6 +129,24 @@ export async function registerAction(
     redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
   }
 
+  // Cooldown: skip re-send if a verify token was issued in the last 2 minutes.
+  if (existing) {
+    const [recentToken] = await db
+      .select({ id: authTokens.id })
+      .from(authTokens)
+      .where(
+        and(
+          eq(authTokens.userId, existing.id),
+          eq(authTokens.type, "email_verify"),
+          gt(authTokens.createdAt, new Date(Date.now() - 2 * 60 * 1000)),
+        ),
+      )
+      .limit(1);
+    if (recentToken) {
+      redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
+    }
+  }
+
   let userId = existing?.id;
   let nameForEmail = existing?.name ?? parsed.data.name;
 
@@ -138,12 +164,20 @@ export async function registerAction(
     nameForEmail = created.name;
   }
 
-  const token = await issueToken(userId!, "email_verify", 24);
-  await sendVerificationEmail({
-    to: email,
-    name: nameForEmail,
-    token,
-  });
+  try {
+    const token = await issueToken(userId!, "email_verify", 24);
+    await sendVerificationEmail({
+      to: email,
+      name: nameForEmail,
+      token,
+      ip,
+    });
+  } catch (err) {
+    if (isEmailRateLimited(err)) {
+      return { error: RATE_LIMITED };
+    }
+    throw err;
+  }
 
   redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
 }
@@ -158,7 +192,12 @@ export async function resendVerificationAction(
   }
 
   const email = emailResult.data.toLowerCase();
-  if (!(await throttleAuth("resend", email))) {
+  const ip = await clientIp();
+
+  if (!(await rateLimit(`resend-cooldown:${email}`, 1, 120))) {
+    return { error: RATE_LIMITED };
+  }
+  if (!(await rateLimit(`resend:${ip}:${email}`, 3, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
@@ -179,8 +218,15 @@ export async function resendVerificationAction(
     return generic;
   }
 
-  const token = await issueToken(user.id, "email_verify", 24);
-  await sendVerificationEmail({ to: email, name: user.name, token });
+  try {
+    const token = await issueToken(user.id, "email_verify", 24);
+    await sendVerificationEmail({ to: email, name: user.name, token, ip });
+  } catch (err) {
+    if (isEmailRateLimited(err)) {
+      return { error: RATE_LIMITED };
+    }
+    throw err;
+  }
 
   return generic;
 }
@@ -243,7 +289,12 @@ export async function forgotPasswordAction(
   }
 
   const email = emailResult.data.toLowerCase();
-  if (!(await throttleAuth("forgot", email))) {
+  const ip = await clientIp();
+
+  if (!(await rateLimit(`forgot-email:${email}`, 3, 60 * 60))) {
+    return { error: RATE_LIMITED };
+  }
+  if (!(await rateLimit(`forgot-ip:${ip}`, 10, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
@@ -254,10 +305,17 @@ export async function forgotPasswordAction(
     .where(eq(users.email, email))
     .limit(1);
 
-  // Always succeed to avoid email enumeration
+  // Always succeed to avoid email enumeration (unless send is rate-limited).
   if (user) {
-    const token = await issueToken(user.id, "password_reset", 1);
-    await sendPasswordResetEmail({ to: email, name: user.name, token });
+    try {
+      const token = await issueToken(user.id, "password_reset", 1);
+      await sendPasswordResetEmail({ to: email, name: user.name, token, ip });
+    } catch (err) {
+      if (isEmailRateLimited(err)) {
+        return { error: RATE_LIMITED };
+      }
+      throw err;
+    }
   }
 
   return {
@@ -414,11 +472,12 @@ export async function updateProfileEmailAction(
   }
 
   const user = await requireUser();
-  if (!(await throttleAuth("profile-email", user.email))) {
+  if (!(await rateLimit(`profile-email:${user.id}`, 3, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
   const email = parsed.data.email.toLowerCase();
+  const ip = await clientIp();
   const db = await getDb();
   const [row] = await db
     .select()
@@ -481,6 +540,7 @@ export async function updateProfileEmailAction(
       to: email,
       name: row.name,
       token,
+      ip,
     });
   } catch (err) {
     console.error("[profile-email] send failed, reverting:", err);
@@ -491,6 +551,9 @@ export async function updateProfileEmailAction(
         emailVerified: previousVerified,
       })
       .where(eq(users.id, user.id));
+    if (isEmailRateLimited(err)) {
+      return { error: RATE_LIMITED };
+    }
     return {
       error:
         "Não foi possível enviar o email de confirmação. Nenhuma alteração foi aplicada.",
@@ -532,7 +595,7 @@ export async function updateProfilePasswordAction(
   }
 
   const user = await requireUser();
-  if (!(await throttleAuth("profile-password", user.email))) {
+  if (!(await rateLimit(`profile-password:${user.id}`, 5, 60 * 60))) {
     return { error: RATE_LIMITED };
   }
 
