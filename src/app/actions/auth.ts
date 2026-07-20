@@ -279,9 +279,18 @@ export async function resetPasswordAction(
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  const [current] = await db
+    .select({ sessionVersion: users.sessionVersion })
+    .from(users)
+    .where(eq(users.id, row.userId))
+    .limit(1);
+
   await db
     .update(users)
-    .set({ passwordHash })
+    .set({
+      passwordHash,
+      sessionVersion: (current?.sessionVersion ?? 0) + 1,
+    })
     .where(eq(users.id, row.userId));
 
   await db

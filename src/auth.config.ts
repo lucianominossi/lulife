@@ -21,12 +21,14 @@ export const authConfig = {
     async jwt({ token, user }) {
       if (user) {
         token.sub = user.id;
+        token.sessionVersion = user.sessionVersion ?? 0;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
+        session.user.sessionVersion = token.sessionVersion ?? 0;
       }
       return session;
     },

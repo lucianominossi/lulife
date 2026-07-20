@@ -12,13 +12,23 @@ export async function requireUser() {
 
   const db = await getDb();
   const [user] = await db
-    .select({ id: users.id, email: users.email, name: users.name })
+    .select({
+      id: users.id,
+      email: users.email,
+      name: users.name,
+      sessionVersion: users.sessionVersion,
+    })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
 
   // Session JWT can outlive a DB reset — force re-login (no cookie writes here)
   if (!user) {
+    redirect("/login?error=session");
+  }
+
+  // Password reset bumps sessionVersion; reject stale JWTs
+  if ((session.user.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)) {
     redirect("/login?error=session");
   }
 

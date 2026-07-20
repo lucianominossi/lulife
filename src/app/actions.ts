@@ -371,6 +371,15 @@ export async function updateTransaction(formData: FormData) {
   const { method, date, yearMonth, invoiceYm } = resolveExpenseMonths(formData);
   const installmentCount = parseInstallmentCount(formData);
 
+  const [owned] = await db
+    .select({ id: transactions.id })
+    .from(transactions)
+    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id!)))
+    .limit(1);
+  if (!owned) {
+    throw new Error("Lançamento não encontrado");
+  }
+
   const existingInvoices = await db
     .select({ yearMonth: transactionInvoices.yearMonth })
     .from(transactionInvoices)
@@ -500,13 +509,7 @@ export async function createRecurringRule(formData: FormData) {
     dayOfMonth,
     nextRun,
     active: true,
-    installmentCount:
-      method === "credit"
-        ? Math.max(
-            1,
-            parseInt(String(formData.get("installmentCount") || "1"), 10) || 1,
-          )
-        : null,
+    installmentCount: method === "credit" ? parseInstallmentCount(formData) : null,
   });
   revalidatePath("/recurring");
 }

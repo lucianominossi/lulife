@@ -19,6 +19,8 @@ export const users = pgTable("users", {
   emailVerified: timestamp("email_verified", { mode: "date" }),
   image: text("image"),
   passwordHash: text("password_hash").notNull(),
+  /** Bumped on password reset so existing JWTs are rejected. */
+  sessionVersion: integer("session_version").notNull().default(0),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
 });
 

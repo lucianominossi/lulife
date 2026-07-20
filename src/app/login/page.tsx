@@ -6,6 +6,20 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { AuthShell } from "@/components/auth-shell";
 
+/** Only same-origin relative paths — blocks open redirects via callbackUrl. */
+function safeCallbackUrl(raw: string | null): string {
+  if (!raw) return "/month";
+  if (!raw.startsWith("/") || raw.startsWith("//")) return "/month";
+  try {
+    const u = new URL(raw, "http://local.invalid");
+    if (u.origin !== "http://local.invalid") return "/month";
+    const path = `${u.pathname}${u.search}${u.hash}`;
+    return path || "/month";
+  } catch {
+    return "/month";
+  }
+}
+
 function LoginForm() {
   const router = useRouter();
   const search = useSearchParams();
@@ -40,7 +54,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(search.get("callbackUrl") || "/month");
+    router.push(safeCallbackUrl(search.get("callbackUrl")));
     router.refresh();
   }
 

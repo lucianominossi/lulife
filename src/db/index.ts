@@ -27,6 +27,7 @@ async function migratePglite(client: PGlite) {
       email_verified TIMESTAMPTZ,
       image TEXT,
       password_hash TEXT NOT NULL,
+      session_version INTEGER NOT NULL DEFAULT 0,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -137,6 +138,9 @@ async function migratePglite(client: PGlite) {
     );
     CREATE INDEX IF NOT EXISTS auth_tokens_user_type ON auth_tokens(user_id, type);
     CREATE UNIQUE INDEX IF NOT EXISTS auth_tokens_hash ON auth_tokens(token_hash);
+  `);
+  await client.exec(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
   `);
 }
 

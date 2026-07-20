@@ -36,7 +36,9 @@ async function sendEmail({
     process.env.EMAIL_FROM?.trim() || "Lulife <onboarding@resend.dev>";
 
   if (!apiKey) {
-    console.info(`[email:dev] To: ${to}\nSubject: ${subject}\n${text}`);
+    console.info(
+      `[email:dev] To: ${to} | Subject: ${subject} | (body omitted — contains secrets)`,
+    );
     return { ok: true as const, mode: "console" as const };
   }
 
