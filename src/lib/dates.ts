@@ -13,32 +13,6 @@ const MONTHS_PT = [
   "Dez",
 ] as const;
 
-const MONTH_MAP: Record<string, number> = {
-  jan: 1,
-  fev: 2,
-  mar: 3,
-  abr: 4,
-  mai: 5,
-  jun: 6,
-  jul: 7,
-  ago: 8,
-  set: 9,
-  out: 10,
-  nov: 11,
-  dez: 12,
-};
-
-/** Convert "Jul/26" → "2026-07" */
-export function invoiceLabelToYearMonth(label: string): string | null {
-  const cleaned = label.trim();
-  const m = cleaned.match(/^([A-Za-zÀ-ÿ]{3})\/(\d{2})$/);
-  if (!m) return null;
-  const month = MONTH_MAP[m[1].toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")];
-  if (!month) return null;
-  const year = 2000 + parseInt(m[2], 10);
-  return `${year}-${String(month).padStart(2, "0")}`;
-}
-
 /** Convert "2026-07" → "Jul/26" */
 export function yearMonthToLabel(ym: string): string {
   const [y, m] = ym.split("-").map(Number);

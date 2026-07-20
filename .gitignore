@@ -44,6 +44,3 @@ next-env.d.ts
 
 # local pglite
 .data/
-
-# Local test utility (hardcodes local filesystem paths)
-scripts/test-import.ts

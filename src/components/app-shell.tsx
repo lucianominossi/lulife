@@ -10,7 +10,6 @@ import {
   CreditCard,
   LineChart,
   RefreshCw,
-  Upload,
   Settings,
   Menu,
   X,
@@ -40,7 +39,6 @@ const links = [
     match: "/recurring",
     icon: RefreshCw,
   },
-  { href: "/import", label: "Importar", match: "/import", icon: Upload },
   { href: "/settings", label: "Cadastros", match: "/settings", icon: Settings },
 ];
 
