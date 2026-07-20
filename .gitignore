@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local pglite
 .data/
+
+# Neon connection for one-off scripts (never commit)
+.env.neon
