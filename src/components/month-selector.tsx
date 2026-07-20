@@ -29,6 +29,12 @@ export function MonthDashboardFrame({
     setActiveYm(yearMonth);
   }, [yearMonth]);
 
+  // Prefetch adjacent months so arrow navigation resolves faster.
+  useEffect(() => {
+    router.prefetch(`/month/${addMonths(yearMonth, -1)}`);
+    router.prefetch(`/month/${addMonths(yearMonth, 1)}`);
+  }, [router, yearMonth]);
+
   function go(delta: number) {
     const next = addMonths(activeYm, delta);
     setActiveYm(next);

@@ -1,10 +1,12 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { redirect } from "next/navigation";
 
-export async function requireUser() {
+/** One auth+DB lookup per request (layout + page share the same result). */
+export const requireUser = cache(async () => {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/login");
@@ -37,4 +39,4 @@ export async function requireUser() {
     email: user.email,
     name: user.name,
   };
-}
+});

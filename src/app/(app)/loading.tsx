@@ -1,5 +1,0 @@
-import { DashboardShimmer } from "@/components/dashboard-shimmer";
-
-export default function AppLoading() {
-  return <DashboardShimmer />;
-}

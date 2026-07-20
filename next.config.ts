@@ -5,6 +5,11 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
+    // Reuse visited dynamic RSC payloads briefly (cold/first visit unchanged).
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   // PGlite breaks when webpack/turbopack bundle it (import.meta.url → URL → path error)
   serverExternalPackages: [
