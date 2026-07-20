@@ -1,5 +1,5 @@
 import { DashboardShimmer } from "@/components/dashboard-shimmer";
 
-export default function AppLoading() {
+export default function MonthIndexLoading() {
   return <DashboardShimmer />;
 }

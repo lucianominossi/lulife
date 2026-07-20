@@ -20,34 +20,43 @@ export function LoginForm() {
     setUnverifiedEmail(null);
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email"));
-    const res = await signIn("credentials", {
-      email,
-      password: String(fd.get("password")),
-      redirect: false,
-    });
-    setLoading(false);
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password: String(fd.get("password")),
+        redirect: false,
+      });
 
-    if (res?.error) {
-      const code = (res as { code?: string }).code;
-      if (code === "rate_limited" || res.error === "rate_limited") {
-        setError(
-          "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
-        );
+      if (res?.error) {
+        setLoading(false);
+        const code = (res as { code?: string }).code;
+        if (code === "rate_limited" || res.error === "rate_limited") {
+          setError(
+            "Muitas tentativas. Aguarde alguns minutos e tente novamente.",
+          );
+          return;
+        }
+        if (
+          code === "email_not_verified" ||
+          res.error === "email_not_verified"
+        ) {
+          setUnverifiedEmail(email);
+          setError(
+            "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
+          );
+          return;
+        }
+        setError("Email ou senha inválidos.");
         return;
       }
-      if (code === "email_not_verified" || res.error === "email_not_verified") {
-        setUnverifiedEmail(email);
-        setError(
-          "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
-        );
-        return;
-      }
-      setError("Email ou senha inválidos.");
-      return;
+
+      // Keep button loading through navigation — Neon dashboard can take a few seconds.
+      router.replace(safeCallbackUrl(search.get("callbackUrl")));
+      router.refresh();
+    } catch {
+      setLoading(false);
+      setError("Não foi possível entrar. Tente novamente.");
     }
-
-    router.push(safeCallbackUrl(search.get("callbackUrl")));
-    router.refresh();
   }
 
   return (
@@ -74,6 +83,7 @@ export function LoginForm() {
           type="email"
           required
           autoComplete="email"
+          disabled={loading}
           className="input-field py-3"
           placeholder="voce@email.com"
         />
@@ -93,6 +103,7 @@ export function LoginForm() {
           type="password"
           required
           autoComplete="current-password"
+          disabled={loading}
           className="input-field py-3"
         />
       </label>
@@ -120,9 +131,20 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={loading}
+        aria-busy={loading}
         className="btn-primary w-full py-3.5"
       >
-        {loading ? "Entrando…" : "Entrar"}
+        {loading ? (
+          <span className="inline-flex items-center justify-center gap-2">
+            <span
+              className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+              aria-hidden
+            />
+            Entrando…
+          </span>
+        ) : (
+          "Entrar"
+        )}
       </button>
       <p className="text-center text-sm text-[var(--color-ink-muted)]">
         Não tem conta?{" "}

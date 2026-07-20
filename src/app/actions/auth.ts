@@ -12,6 +12,7 @@ import { authTokens, users } from "@/db/schema";
 import {
   createRawToken,
   hashToken,
+  hasEmailProvider,
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "@/lib/email";
@@ -445,6 +446,27 @@ export async function updateProfileEmailAction(
     return { error: "Este email já está em uso." };
   }
 
+  // Without Resend, auto-verify so the user is not locked out of login.
+  if (!hasEmailProvider()) {
+    await db
+      .update(users)
+      .set({
+        email,
+        emailVerified: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    revalidatePath("/profile");
+    return {
+      ok: true,
+      message:
+        "Email atualizado. (Envio de confirmação ainda não configurado — conta já liberada para login.)",
+    };
+  }
+
+  const previousEmail = row.email;
+  const previousVerified = row.emailVerified;
+
   await db
     .update(users)
     .set({
@@ -453,12 +475,27 @@ export async function updateProfileEmailAction(
     })
     .where(eq(users.id, user.id));
 
-  const token = await issueToken(user.id, "email_verify", 24);
-  await sendVerificationEmail({
-    to: email,
-    name: row.name,
-    token,
-  });
+  try {
+    const token = await issueToken(user.id, "email_verify", 24);
+    await sendVerificationEmail({
+      to: email,
+      name: row.name,
+      token,
+    });
+  } catch (err) {
+    console.error("[profile-email] send failed, reverting:", err);
+    await db
+      .update(users)
+      .set({
+        email: previousEmail,
+        emailVerified: previousVerified,
+      })
+      .where(eq(users.id, user.id));
+    return {
+      error:
+        "Não foi possível enviar o email de confirmação. Nenhuma alteração foi aplicada.",
+    };
+  }
 
   revalidatePath("/profile");
 

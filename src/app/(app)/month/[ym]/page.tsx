@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { eq, inArray } from "drizzle-orm";
 import {
   Wallet,
@@ -7,8 +8,7 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
 } from "lucide-react";
-import { MonthSelector } from "@/components/month-selector";
-import { FabQuickAdd } from "@/components/fab-quick-add";
+import { MonthDashboardFrame } from "@/components/month-selector";
 import {
   EditIncomeButton,
   EditTransactionButton,
@@ -19,6 +19,7 @@ import {
   ExpenseDonutChart,
   MonthTrendChart,
 } from "@/components/dashboard-charts";
+import { DashboardShimmer } from "@/components/dashboard-shimmer";
 import { IconBox } from "@/components/ui/icon-box";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { getDb } from "@/db";
@@ -40,7 +41,19 @@ function pctChange(current: number, previous: number): number | null {
   return ((current - previous) / Math.abs(previous)) * 100;
 }
 
-export default async function MonthPage({
+export default function MonthPage({
+  params,
+}: {
+  params: Promise<{ ym: string }>;
+}) {
+  return (
+    <Suspense fallback={<DashboardShimmer />}>
+      <MonthDashboard params={params} />
+    </Suspense>
+  );
+}
+
+async function MonthDashboard({
   params,
 }: {
   params: Promise<{ ym: string }>;
@@ -233,12 +246,8 @@ export default async function MonthPage({
     .slice(0, 8);
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <MonthSelector yearMonth={ym} />
-        <FabQuickAdd yearMonth={ym} meta={meta} inline />
-      </div>
-
+    <MonthDashboardFrame yearMonth={ym} meta={meta}>
+      <div className="space-y-8">
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           className="animate-fade-in animate-delay-1"
@@ -544,9 +553,8 @@ export default async function MonthPage({
           ])}
         />
       </Panel>
-
-      <FabQuickAdd yearMonth={ym} meta={meta} />
-    </div>
+      </div>
+    </MonthDashboardFrame>
   );
 }
 

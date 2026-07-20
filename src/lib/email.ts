@@ -20,6 +20,11 @@ export function hashToken(raw: string) {
   return createHash("sha256").update(raw).digest("hex");
 }
 
+/** True when Resend is configured for real delivery. */
+export function hasEmailProvider() {
+  return Boolean(process.env.RESEND_API_KEY?.trim());
+}
+
 async function sendEmail({
   to,
   subject,
@@ -36,14 +41,8 @@ async function sendEmail({
     process.env.EMAIL_FROM?.trim() || "Lulife <onboarding@resend.dev>";
 
   if (!apiKey) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "RESEND_API_KEY é obrigatório em produção para envio de emails.",
-      );
-    }
-    console.info(
-      `[email:dev] To: ${to} | Subject: ${subject} | (body omitted — contains secrets)`,
-    );
+    // MVP without Resend: deliver via server logs (Vercel Runtime Logs).
+    console.info(`[email:console] To: ${to} | Subject: ${subject}\n${text}`);
     return { ok: true as const, mode: "console" as const };
   }
 
