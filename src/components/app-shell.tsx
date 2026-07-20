@@ -174,7 +174,7 @@ function UpgradeCard() {
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold text-white">Lulife Pro</p>
           <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-sidebar-muted)]">
-            Insights avançados e metas ilimitadas.
+            Mais opções e vantagens.
           </p>
           <button
             type="button"
