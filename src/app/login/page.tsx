@@ -43,6 +43,10 @@ function LoginForm() {
 
     if (res?.error) {
       const code = (res as { code?: string }).code;
+      if (code === "rate_limited" || res.error === "rate_limited") {
+        setError("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
+        return;
+      }
       if (code === "email_not_verified" || res.error === "email_not_verified") {
         setUnverifiedEmail(email);
         setError(

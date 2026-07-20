@@ -2,8 +2,10 @@
 
 import bcrypt from "bcryptjs";
 import { and, eq, gt, lt } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { signOut } from "@/auth";
 import { getDb } from "@/db";
 import { authTokens, users } from "@/db/schema";
 import {
@@ -12,6 +14,8 @@ import {
   sendPasswordResetEmail,
   sendVerificationEmail,
 } from "@/lib/email";
+import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { requireUser } from "@/lib/session";
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(80),
@@ -37,6 +41,9 @@ export type AuthActionState = {
   error?: string;
   message?: string;
 };
+
+const RATE_LIMITED =
+  "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
 
 async function purgeExpiredTokens() {
   const db = await getDb();
@@ -67,6 +74,12 @@ async function issueToken(
   return raw;
 }
 
+async function throttleAuth(bucket: string, email: string) {
+  const h = await headers();
+  const ip = await clientIpFromHeaders(h);
+  return rateLimit(`${bucket}:${ip}:${email}`, 5, 60 * 60);
+}
+
 export async function registerAction(
   _prev: AuthActionState,
   formData: FormData,
@@ -82,31 +95,34 @@ export async function registerAction(
   }
 
   const email = parsed.data.email.toLowerCase();
+  if (!(await throttleAuth("register", email))) {
+    return { error: RATE_LIMITED };
+  }
+
   const db = await getDb();
   await purgeExpiredTokens();
 
   const [existing] = await db
-    .select({ id: users.id, emailVerified: users.emailVerified })
+    .select({
+      id: users.id,
+      name: users.name,
+      emailVerified: users.emailVerified,
+    })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
 
+  // Never overwrite password on re-register. Always same redirect to avoid
+  // email enumeration (verified → no email; unverified → resend only).
   if (existing?.emailVerified) {
-    return { error: "Já existe uma conta com este email. Faça login." };
+    redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
   }
 
-  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
   let userId = existing?.id;
+  let nameForEmail = existing?.name ?? parsed.data.name;
 
-  if (existing) {
-    await db
-      .update(users)
-      .set({
-        name: parsed.data.name,
-        passwordHash,
-      })
-      .where(eq(users.id, existing.id));
-  } else {
+  if (!existing) {
+    const passwordHash = await bcrypt.hash(parsed.data.password, 12);
     const [created] = await db
       .insert(users)
       .values({
@@ -116,12 +132,13 @@ export async function registerAction(
       })
       .returning();
     userId = created.id;
+    nameForEmail = created.name;
   }
 
   const token = await issueToken(userId!, "email_verify", 24);
   await sendVerificationEmail({
     to: email,
-    name: parsed.data.name,
+    name: nameForEmail,
     token,
   });
 
@@ -138,6 +155,10 @@ export async function resendVerificationAction(
   }
 
   const email = emailResult.data.toLowerCase();
+  if (!(await throttleAuth("resend", email))) {
+    return { error: RATE_LIMITED };
+  }
+
   const db = await getDb();
   const [user] = await db
     .select()
@@ -145,24 +166,20 @@ export async function resendVerificationAction(
     .where(eq(users.email, email))
     .limit(1);
 
-  if (!user) {
-    return {
-      ok: true,
-      message: "Se o email existir, enviaremos um novo link de confirmação.",
-    };
-  }
+  const generic = {
+    ok: true as const,
+    message:
+      "Se o email existir e ainda não estiver confirmado, enviamos um novo link.",
+  };
 
-  if (user.emailVerified) {
-    return { ok: true, message: "Este email já está confirmado. Faça login." };
+  if (!user || user.emailVerified) {
+    return generic;
   }
 
   const token = await issueToken(user.id, "email_verify", 24);
   await sendVerificationEmail({ to: email, name: user.name, token });
 
-  return {
-    ok: true,
-    message: "Enviamos um novo link de confirmação para o seu email.",
-  };
+  return generic;
 }
 
 export async function verifyEmailAction(token: string): Promise<{
@@ -223,6 +240,10 @@ export async function forgotPasswordAction(
   }
 
   const email = emailResult.data.toLowerCase();
+  if (!(await throttleAuth("forgot", email))) {
+    return { error: RATE_LIMITED };
+  }
+
   const db = await getDb();
   const [user] = await db
     .select()
@@ -303,4 +324,31 @@ export async function resetPasswordAction(
     );
 
   redirect("/login?reset=1");
+}
+
+/** Bump sessionVersion then clear Auth.js cookie — invalidates stolen JWTs. */
+export async function signOutAndInvalidate() {
+  const sessionUser = await requireUser();
+  const db = await getDb();
+  const [current] = await db
+    .select({ sessionVersion: users.sessionVersion })
+    .from(users)
+    .where(eq(users.id, sessionUser.id))
+    .limit(1);
+  await db
+    .update(users)
+    .set({ sessionVersion: (current?.sessionVersion ?? 0) + 1 })
+    .where(eq(users.id, sessionUser.id));
+  await signOut({ redirectTo: "/login" });
+}
+
+/** Permanently delete the signed-in user and all cascaded financial data. */
+export async function deleteMyAccount(formData: FormData) {
+  if (formData.get("confirm") !== "on") {
+    throw new Error("Confirmação obrigatória para excluir a conta.");
+  }
+  const sessionUser = await requireUser();
+  const db = await getDb();
+  await db.delete(users).where(eq(users.id, sessionUser.id));
+  await signOut({ redirectTo: "/login" });
 }

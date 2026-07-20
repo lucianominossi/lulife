@@ -1,12 +1,21 @@
+import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { applyRecurringRules } from "@/lib/recurring";
 
+function bearerMatches(header: string | null, secret: string): boolean {
+  if (!header?.startsWith("Bearer ")) return false;
+  const token = header.slice("Bearer ".length);
+  const a = Buffer.from(token);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
 export async function GET(request: Request) {
-  const authHeader = request.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
-  if (!secret || authHeader !== `Bearer ${secret}`) {
+  if (!secret || !bearerMatches(request.headers.get("authorization"), secret)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

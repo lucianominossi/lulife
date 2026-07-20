@@ -141,6 +141,49 @@ async function migratePglite(client: PGlite) {
   `);
   await client.exec(`
     ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0;
+
+    -- Drop duplicate recurring rows before unique indexes (pre-fix races)
+    DELETE FROM transactions
+    WHERE id IN (
+      SELECT id FROM (
+        SELECT id,
+          ROW_NUMBER() OVER (
+            PARTITION BY recurring_rule_id, date
+            ORDER BY created_at ASC, id ASC
+          ) AS rn
+        FROM transactions
+        WHERE recurring_rule_id IS NOT NULL AND date IS NOT NULL
+      ) ranked
+      WHERE rn > 1
+    );
+
+    DELETE FROM incomes
+    WHERE id IN (
+      SELECT id FROM (
+        SELECT id,
+          ROW_NUMBER() OVER (
+            PARTITION BY recurring_rule_id, year_month
+            ORDER BY created_at ASC, id ASC
+          ) AS rn
+        FROM incomes
+        WHERE recurring_rule_id IS NOT NULL
+      ) ranked
+      WHERE rn > 1
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS transactions_recurring_date
+      ON transactions (recurring_rule_id, date)
+      WHERE recurring_rule_id IS NOT NULL AND date IS NOT NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS incomes_recurring_ym
+      ON incomes (recurring_rule_id, year_month)
+      WHERE recurring_rule_id IS NOT NULL;
+
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      key TEXT PRIMARY KEY,
+      count INTEGER NOT NULL DEFAULT 0,
+      window_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
   `);
 }
 

@@ -36,6 +36,11 @@ async function sendEmail({
     process.env.EMAIL_FROM?.trim() || "Lulife <onboarding@resend.dev>";
 
   if (!apiKey) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "RESEND_API_KEY é obrigatório em produção para envio de emails.",
+      );
+    }
     console.info(
       `[email:dev] To: ${to} | Subject: ${subject} | (body omitted — contains secrets)`,
     );

@@ -2,6 +2,7 @@
 
 import { and, eq, gt, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -21,14 +22,36 @@ import {
   addMonths,
 } from "@/lib/dates";
 import { applyRecurringRules } from "@/lib/recurring";
+import {
+  assertOwnedAccount,
+  assertOwnedCategory,
+} from "@/lib/ownership";
 
+const MONEY_ABS_MAX = 99_999_999.99;
+
+const methodSchema = z.enum(["credit", "pix_debit"]);
+const kindSchema = z.enum(["expense", "income"]);
+const accountTypeSchema = z.enum(["credit_card", "bank"]);
+
+/** Negatives allowed (refunds/estornos). Rejects non-finite and absurd magnitudes. */
 function money(value: FormDataEntryValue | null): string {
   let raw = String(value ?? "0").replace(/[^\d.,-]/g, "");
   if (raw.includes(",")) {
     raw = raw.replace(/\./g, "").replace(",", ".");
   }
   const n = parseFloat(raw);
-  return (Number.isFinite(n) ? n : 0).toFixed(2);
+  if (!Number.isFinite(n) || Math.abs(n) > MONEY_ABS_MAX) {
+    throw new Error("Valor inválido");
+  }
+  return n.toFixed(2);
+}
+
+function parseMethod(formData: FormData): "credit" | "pix_debit" {
+  return methodSchema.parse(String(formData.get("method") || ""));
+}
+
+function parseKind(formData: FormData): "expense" | "income" {
+  return kindSchema.parse(String(formData.get("kind") || ""));
 }
 
 /** Empty, 0, NaN, or invalid → 1; otherwise clamp to 1–48. */
@@ -129,10 +152,11 @@ export async function deleteCategory(id: string) {
 export async function createAccount(formData: FormData) {
   const user = await requireUser();
   const db = await getDb();
+  const type = accountTypeSchema.parse(String(formData.get("type") || ""));
   await db.insert(accounts).values({
     userId: user.id!,
     name: String(formData.get("name")).trim(),
-    type: String(formData.get("type")) as "credit_card" | "bank",
+    type,
   });
   revalidatePath("/settings");
 }
@@ -149,7 +173,11 @@ export async function deleteAccount(id: string) {
 export async function upsertBudget(formData: FormData) {
   const user = await requireUser();
   const db = await getDb();
-  const categoryId = String(formData.get("categoryId"));
+  const categoryId = await assertOwnedCategory(
+    user.id!,
+    String(formData.get("categoryId") || "") || null,
+  );
+  if (!categoryId) throw new Error("Categoria inválida");
   const yearMonth = String(formData.get("yearMonth"));
   const plannedAmount = money(formData.get("plannedAmount"));
 
@@ -197,13 +225,21 @@ export async function createIncome(formData: FormData) {
   const db = await getDb();
   const yearMonth =
     String(formData.get("yearMonth") || "") || currentYearMonth();
+  const accountId = await assertOwnedAccount(
+    user.id!,
+    String(formData.get("accountId") || "") || null,
+  );
+  const categoryId = await assertOwnedCategory(
+    user.id!,
+    String(formData.get("categoryId") || "") || null,
+  );
   await db.insert(incomes).values({
     userId: user.id!,
     description: String(formData.get("description")).trim(),
     amount: money(formData.get("amount")),
     date: String(formData.get("date") || "") || null,
-    accountId: String(formData.get("accountId") || "") || null,
-    categoryId: String(formData.get("categoryId") || "") || null,
+    accountId,
+    categoryId,
     yearMonth,
   });
   revalidatePath(`/month/${yearMonth}`);
@@ -216,6 +252,14 @@ export async function updateIncome(formData: FormData) {
   const id = String(formData.get("id"));
   const yearMonth =
     String(formData.get("yearMonth") || "") || currentYearMonth();
+  const accountId = await assertOwnedAccount(
+    user.id!,
+    String(formData.get("accountId") || "") || null,
+  );
+  const categoryId = await assertOwnedCategory(
+    user.id!,
+    String(formData.get("categoryId") || "") || null,
+  );
 
   await db
     .update(incomes)
@@ -223,8 +267,8 @@ export async function updateIncome(formData: FormData) {
       description: String(formData.get("description")).trim(),
       amount: money(formData.get("amount")),
       date: String(formData.get("date") || "") || null,
-      accountId: String(formData.get("accountId") || "") || null,
-      categoryId: String(formData.get("categoryId") || "") || null,
+      accountId,
+      categoryId,
       yearMonth,
     })
     .where(and(eq(incomes.id, id), eq(incomes.userId, user.id!)));
@@ -244,7 +288,7 @@ export async function deleteIncome(id: string, yearMonth: string) {
 }
 
 function resolveExpenseMonths(formData: FormData) {
-  const method = String(formData.get("method")) as "credit" | "pix_debit";
+  const method = parseMethod(formData);
   const date = String(formData.get("date") || "").trim();
   const faturaClosed =
     formData.get("faturaClosed") === "on" ||
@@ -273,8 +317,14 @@ export async function createTransaction(formData: FormData) {
 
   const description = String(formData.get("description")).trim();
   const amount = money(formData.get("amount"));
-  const accountId = String(formData.get("accountId") || "") || null;
-  const categoryId = String(formData.get("categoryId") || "") || null;
+  const accountId = await assertOwnedAccount(
+    user.id!,
+    String(formData.get("accountId") || "") || null,
+  );
+  const categoryId = await assertOwnedCategory(
+    user.id!,
+    String(formData.get("categoryId") || "") || null,
+  );
   const notes = String(formData.get("notes") || "") || null;
 
   const installmentCount = parseInstallmentCount(formData);
@@ -392,8 +442,14 @@ export async function updateTransaction(formData: FormData) {
       amount: money(formData.get("amount")),
       date,
       method,
-      accountId: String(formData.get("accountId") || "") || null,
-      categoryId: String(formData.get("categoryId") || "") || null,
+      accountId: await assertOwnedAccount(
+        user.id!,
+        String(formData.get("accountId") || "") || null,
+      ),
+      categoryId: await assertOwnedCategory(
+        user.id!,
+        String(formData.get("categoryId") || "") || null,
+      ),
       yearMonth,
       notes: String(formData.get("notes") || "") || null,
     })
@@ -485,16 +541,22 @@ export async function deleteInvestment(id: string) {
 export async function createRecurringRule(formData: FormData) {
   const user = await requireUser();
   const db = await getDb();
-  const kind = String(formData.get("kind")) as "expense" | "income";
+  const kind = parseKind(formData);
   const method =
-    kind === "expense"
-      ? (String(formData.get("method")) as "credit" | "pix_debit")
-      : null;
+    kind === "expense" ? parseMethod(formData) : null;
   const rawNext = String(formData.get("nextRun") || "").trim();
   const nextRun = dateToYearMonth(rawNext) || rawNext || currentYearMonth();
   const dayOfMonth = Math.min(
     28,
     Math.max(1, parseInt(String(formData.get("dayOfMonth") || "1"), 10) || 1),
+  );
+  const accountId = await assertOwnedAccount(
+    user.id!,
+    String(formData.get("accountId") || "") || null,
+  );
+  const categoryId = await assertOwnedCategory(
+    user.id!,
+    String(formData.get("categoryId") || "") || null,
   );
 
   await db.insert(recurringRules).values({
@@ -503,8 +565,8 @@ export async function createRecurringRule(formData: FormData) {
     description: String(formData.get("description")).trim(),
     amount: money(formData.get("amount")),
     method,
-    accountId: String(formData.get("accountId") || "") || null,
-    categoryId: String(formData.get("categoryId") || "") || null,
+    accountId,
+    categoryId,
     cadence: "monthly",
     dayOfMonth,
     nextRun,

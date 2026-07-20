@@ -10,7 +10,7 @@ import {
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -99,6 +99,9 @@ export const transactions = pgTable(
   (t) => [
     index("transactions_user_method").on(t.userId, t.method),
     index("transactions_user_year_month").on(t.userId, t.yearMonth),
+    uniqueIndex("transactions_recurring_date")
+      .on(t.recurringRuleId, t.date)
+      .where(sql`${t.recurringRuleId} IS NOT NULL AND ${t.date} IS NOT NULL`),
   ],
 );
 
@@ -138,7 +141,12 @@ export const incomes = pgTable(
     recurringRuleId: uuid("recurring_rule_id"),
     createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   },
-  (t) => [index("incomes_user_ym").on(t.userId, t.yearMonth)],
+  (t) => [
+    index("incomes_user_ym").on(t.userId, t.yearMonth),
+    uniqueIndex("incomes_recurring_ym")
+      .on(t.recurringRuleId, t.yearMonth)
+      .where(sql`${t.recurringRuleId} IS NOT NULL`),
+  ],
 );
 
 export const budgets = pgTable(
@@ -175,6 +183,15 @@ export const investments = pgTable("investments", {
   notes: text("notes"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+/** Postgres-backed rate limits (free-tier; no Redis). */
+export const rateLimits = pgTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: timestamp("window_start", { mode: "date" })
+    .notNull()
+    .defaultNow(),
 });
 
 export const recurringRules = pgTable("recurring_rules", {

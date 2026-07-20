@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
@@ -17,6 +16,7 @@ import {
   ChevronRight,
   LogOut,
 } from "lucide-react";
+import { signOutAndInvalidate } from "@/app/actions/auth";
 import { IconBox } from "@/components/ui/icon-box";
 
 const links = [
@@ -138,14 +138,15 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
           )}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={() => signOut({ callbackUrl: "/login" })}
-        className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-[#F43F5E]"
-      >
-        <LogOut size={15} />
-        Sair
-      </button>
+      <form action={signOutAndInvalidate}>
+        <button
+          type="submit"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-[#F43F5E]"
+        >
+          <LogOut size={15} />
+          Sair
+        </button>
+      </form>
     </div>
   );
 }
