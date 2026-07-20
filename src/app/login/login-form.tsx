@@ -125,7 +125,7 @@ export function LoginForm() {
       )}
       {search.get("error") === "session" && !error && (
         <p className="text-sm text-[var(--color-ink-muted)]" role="status">
-          Sessão expirada após reset do banco. Entre novamente.
+          Sessão encerrada. Entre novamente com sua senha.
         </p>
       )}
       <button

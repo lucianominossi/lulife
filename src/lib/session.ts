@@ -5,6 +5,22 @@ import { auth } from "@/auth";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 
+/** True when JWT exists and sessionVersion still matches the DB. */
+export async function isSessionCurrent() {
+  const session = await auth();
+  if (!session?.user?.id) return false;
+
+  const db = await getDb();
+  const [user] = await db
+    .select({ sessionVersion: users.sessionVersion })
+    .from(users)
+    .where(eq(users.id, session.user.id))
+    .limit(1);
+
+  if (!user) return false;
+  return (session.user.sessionVersion ?? 0) === (user.sessionVersion ?? 0);
+}
+
 /** One auth+DB lookup per request (layout + page share the same result). */
 export const requireUser = cache(async () => {
   const session = await auth();
@@ -29,7 +45,7 @@ export const requireUser = cache(async () => {
     redirect("/login?error=session");
   }
 
-  // Password reset bumps sessionVersion; reject stale JWTs
+  // Password change/reset bumps sessionVersion; reject stale JWTs
   if ((session.user.sessionVersion ?? 0) !== (user.sessionVersion ?? 0)) {
     redirect("/login?error=session");
   }

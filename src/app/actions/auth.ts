@@ -620,5 +620,7 @@ export async function updateProfilePasswordAction(
     .where(eq(users.id, user.id));
   await bumpSessionVersion(user.id);
 
-  redirect("/login?password=1");
+  // Clear JWT so /login does not bounce back into requireUser (redirect loop).
+  await signOut({ redirectTo: "/login?password=1" });
+  return { ok: true };
 }
