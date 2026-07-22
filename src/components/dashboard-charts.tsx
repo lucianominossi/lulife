@@ -186,7 +186,7 @@ export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
                   {data.map((entry, i) => (
                     <Cell
                       key={entry.name}
-                      fill={categoryColor(i, entry.name)}
+                      fill={categoryColor(i)}
                     />
                   ))}
                 </Pie>
@@ -214,7 +214,7 @@ export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
                   <span className="flex min-w-0 items-center gap-2">
                     <span
                       className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ background: categoryColor(i, item.name) }}
+                      style={{ background: categoryColor(i) }}
                     />
                     <span className="truncate text-[var(--color-ink-muted)]">
                       {item.name}

@@ -247,6 +247,7 @@ export async function listMonthCredit(userId: string, yearMonth: string) {
       accountName: accounts.name,
       categoryId: transactions.categoryId,
       categoryName: categories.name,
+      yearMonth: transactions.yearMonth,
       method: transactions.method,
       notes: transactions.notes,
     })

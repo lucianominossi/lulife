@@ -1,57 +1,52 @@
-import { and, desc, eq, inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { deleteTransaction } from "@/app/actions";
 import { EditTransactionButton } from "@/components/edit-record";
+import { FaturaSelector } from "@/components/fatura-selector";
 import { Money } from "@/components/money";
-import { getDb } from "@/db";
-import {
-  accounts,
-  categories,
-  transactionInvoices,
-  transactions,
-} from "@/db/schema";
-import { requireUser } from "@/lib/session";
-import { toNumber, yearMonthToLabel, formatDateBR } from "@/lib/dates";
 import { TransactionForm } from "@/components/transaction-form";
+import { getDb } from "@/db";
+import { accounts, categories, transactionInvoices } from "@/db/schema";
+import {
+  currentYearMonth,
+  formatDateBR,
+  toNumber,
+  yearMonthToLabel,
+} from "@/lib/dates";
+import { listMonthCredit, listMonthPixDebit } from "@/lib/finance";
+import { requireUser } from "@/lib/session";
+
+function isValidYearMonth(ym: string | undefined): ym is string {
+  return !!ym && /^\d{4}-\d{2}$/.test(ym);
+}
 
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ method?: string; q?: string }>;
+  searchParams: Promise<{ method?: string; q?: string; ym?: string }>;
 }) {
   const sp = await searchParams;
   const user = await requireUser();
   const db = await getDb();
 
+  const yearMonth = isValidYearMonth(sp.ym) ? sp.ym : currentYearMonth();
   const methodFilter =
     sp.method === "credit" || sp.method === "pix_debit" ? sp.method : null;
 
-  const rows = await db
-    .select({
-      id: transactions.id,
-      description: transactions.description,
-      amount: transactions.amount,
-      date: transactions.date,
-      method: transactions.method,
-      yearMonth: transactions.yearMonth,
-      notes: transactions.notes,
-      accountId: transactions.accountId,
-      accountName: accounts.name,
-      categoryId: transactions.categoryId,
-      categoryName: categories.name,
-    })
-    .from(transactions)
-    .leftJoin(accounts, eq(transactions.accountId, accounts.id))
-    .leftJoin(categories, eq(transactions.categoryId, categories.id))
-    .where(
-      methodFilter
-        ? and(
-            eq(transactions.userId, user.id!),
-            eq(transactions.method, methodFilter),
-          )
-        : eq(transactions.userId, user.id!),
-    )
-    .orderBy(desc(transactions.date), desc(transactions.createdAt));
+  const [creditRows, pixRows] = await Promise.all([
+    methodFilter === "pix_debit"
+      ? Promise.resolve([])
+      : listMonthCredit(user.id!, yearMonth),
+    methodFilter === "credit"
+      ? Promise.resolve([])
+      : listMonthPixDebit(user.id!, yearMonth),
+  ]);
+
+  const rows = [...creditRows, ...pixRows].sort((a, b) => {
+    const dateA = a.date ?? "";
+    const dateB = b.date ?? "";
+    return dateB === dateA ? 0 : dateB > dateA ? 1 : -1;
+  });
 
   const txIds = rows.map((r) => r.id);
   const invoices =
@@ -79,38 +74,50 @@ export default async function TransactionsPage({
       )
     : rows;
 
+  const methodLinks = [
+    {
+      href: `/transactions?ym=${yearMonth}`,
+      label: "Todos",
+      active: !methodFilter,
+    },
+    {
+      href: `/transactions?ym=${yearMonth}&method=credit`,
+      label: "Crédito",
+      active: methodFilter === "credit",
+    },
+    {
+      href: `/transactions?ym=${yearMonth}&method=pix_debit`,
+      label: "Pix/Débito",
+      active: methodFilter === "pix_debit",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[32px] font-bold tracking-tight">Gastos</h1>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Crédito e Pix/Débito em um só lugar
+            Crédito e Pix/Débito · {yearMonthToLabel(yearMonth)}
           </p>
         </div>
-        <div className="flex gap-2">
-          {[
-            { href: "/transactions", label: "Todos" },
-            { href: "/transactions?method=credit", label: "Crédito" },
-            { href: "/transactions?method=pix_debit", label: "Pix/Débito" },
-          ].map((f) => {
-            const active =
-              (!methodFilter && f.href === "/transactions") ||
-              (methodFilter && f.href.includes(methodFilter));
-            return (
+        <div className="flex flex-wrap items-end gap-3">
+          <FaturaSelector yearMonth={yearMonth} method={methodFilter} />
+          <div className="flex gap-2">
+            {methodLinks.map((f) => (
               <Link
                 key={f.href}
                 href={f.href}
                 className={`rounded-xl px-3.5 py-2 text-sm font-medium transition ${
-                  active
+                  f.active
                     ? "bg-[var(--accent-soft)] text-[#C4B5FD]"
                     : "border border-[var(--border-strong)] text-[var(--color-ink-muted)] hover:bg-white/5 hover:text-white"
                 }`}
               >
                 {f.label}
               </Link>
-            );
-          })}
+            ))}
+          </div>
         </div>
       </header>
 
