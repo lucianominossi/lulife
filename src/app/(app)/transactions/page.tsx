@@ -121,7 +121,7 @@ export default async function TransactionsPage({
         </div>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+      <div className="grid items-start gap-6 xl:grid-cols-[320px_1fr]">
         <TransactionForm categories={cats} accounts={accs} />
 
         <div className="panel overflow-hidden">
