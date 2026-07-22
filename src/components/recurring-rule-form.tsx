@@ -62,7 +62,7 @@ export function RecurringRuleForm({
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Nova regra</h2>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            Define o que o sistema deve gerar automaticamente a cada mês.
+            Molde mensal: ao abrir o mês, o lançamento é criado automaticamente.
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export function RecurringRuleForm({
               className="input-field"
             />
             <span className="block text-xs text-[var(--color-ink-subtle)]">
-              Dia em que o lançamento é gerado (1–28).
+              Dia do lançamento (1–28).
             </span>
           </label>
 
@@ -182,28 +182,30 @@ export function RecurringRuleForm({
               className="input-field"
             />
             <span className="block text-xs text-[var(--color-ink-subtle)]">
-              Primeiro mês em que a regra deve gerar.
+              Primeiro mês em que a regra pode aparecer.
             </span>
           </label>
         </div>
 
+        <label className="block space-y-1.5 text-sm">
+          <span className="font-medium text-[var(--color-ink-muted)]">
+            Termina em (opcional)
+          </span>
+          <input name="endsOn" type="month" className="input-field" />
+          <span className="block text-xs text-[var(--color-ink-subtle)]">
+            Vazio = sem data de fim.
+          </span>
+        </label>
+
         {isCreditExpense && (
-          <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-[var(--color-ink-muted)]">
-              Número de parcelas
-            </span>
-            <input
-              name="installmentCount"
-              type="number"
-              min={1}
-              defaultValue={1}
-              className="input-field"
-            />
-            <span className="block text-xs text-[var(--color-ink-subtle)]">
-              Quantas faturas futuras receberão este gasto. Use 1 para
-              mensalidade fixa.
-            </span>
-          </label>
+          <>
+            <input type="hidden" name="installmentCount" value="1" />
+            <p className="text-xs text-[var(--color-ink-subtle)]">
+              Mensalidade no cartão: criada ao abrir o mês. Compra parcelada
+              (3x, 5x…) use{" "}
+              <span className="text-[var(--color-ink)]">+ Novo lançamento</span>.
+            </p>
+          </>
         )}
 
         <button type="submit" disabled={pending} className="btn-primary w-full">

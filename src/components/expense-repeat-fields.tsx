@@ -49,6 +49,18 @@ export function ExpenseRepeatFields({
     }
   }, [method, effectiveCount]);
 
+  const endsOnField = recurring ? (
+    <label className="block space-y-1 text-sm">
+      <span className="text-[var(--color-ink-muted)]">
+        Termina em (opcional)
+      </span>
+      <input name="endsOn" type="month" className="input-field" />
+      <span className="block text-xs text-[var(--color-ink-subtle)]">
+        Vazio = sem data de fim. O lançamento é criado ao abrir cada mês.
+      </span>
+    </label>
+  ) : null;
+
   if (method === "pix_debit") {
     return (
       <div className="space-y-3 sm:col-span-2">
@@ -64,28 +76,31 @@ export function ExpenseRepeatFields({
           <span>
             Cobrança recorrente
             <span className="mt-0.5 block text-xs text-[var(--color-ink-muted)]">
-              Lança todo mês na mesma data, sem data de fim (ex.: luz, celular,
-              internet).
+              Todo mês o lançamento é criado ao abrir o dashboard (ex.: luz,
+              celular).
             </span>
           </span>
         </label>
         {recurring && (
-          <label className="block space-y-1 text-sm">
-            <span className="text-[var(--color-ink-muted)]">Dia do mês</span>
-            <input
-              name="dayOfMonth"
-              type="number"
-              min={1}
-              max={28}
-              value={dayOfMonth}
-              onChange={(e) =>
-                setDayOfMonth(
-                  Math.min(28, Math.max(1, parseInt(e.target.value, 10) || 1)),
-                )
-              }
-              className="input-field"
-            />
-          </label>
+          <>
+            <label className="block space-y-1 text-sm">
+              <span className="text-[var(--color-ink-muted)]">Dia do mês</span>
+              <input
+                name="dayOfMonth"
+                type="number"
+                min={1}
+                max={28}
+                value={dayOfMonth}
+                onChange={(e) =>
+                  setDayOfMonth(
+                    Math.min(28, Math.max(1, parseInt(e.target.value, 10) || 1)),
+                  )
+                }
+                className="input-field"
+              />
+            </label>
+            {endsOnField}
+          </>
         )}
       </div>
     );
@@ -112,22 +127,25 @@ export function ExpenseRepeatFields({
         </span>
       </label>
       {!hideSubscription && effectiveCount === 1 && (
-        <label className="flex items-start gap-2 rounded-xl border border-[var(--color-border)] px-3 py-3 text-sm">
-          <input
-            type="checkbox"
-            name="recurring"
-            value="1"
-            checked={recurring}
-            onChange={(e) => setRecurring(e.target.checked)}
-            className="checkbox-field"
-          />
-          <span>
-            Assinatura no cartão (todo mês)
-            <span className="mt-0.5 block text-xs text-[var(--color-ink-muted)]">
-              Cobra de novo todo mês até você pausar em Recorrências.
+        <>
+          <label className="flex items-start gap-2 rounded-xl border border-[var(--color-border)] px-3 py-3 text-sm">
+            <input
+              type="checkbox"
+              name="recurring"
+              value="1"
+              checked={recurring}
+              onChange={(e) => setRecurring(e.target.checked)}
+              className="checkbox-field"
+            />
+            <span>
+              Assinatura no cartão (todo mês)
+              <span className="mt-0.5 block text-xs text-[var(--color-ink-muted)]">
+                Criada ao abrir o mês. Pause em Recorrências para parar.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+          {endsOnField}
+        </>
       )}
     </div>
   );

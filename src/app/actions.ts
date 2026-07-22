@@ -21,12 +21,16 @@ import {
   invoiceMonthFromDate,
   addMonths,
 } from "@/lib/dates";
-import { applyRecurringRules } from "@/lib/recurring";
 import {
   assertOwnedAccount,
   assertOwnedCategory,
 } from "@/lib/ownership";
 
+function parseEndsOn(formData: FormData): string | null {
+  const raw = String(formData.get("endsOn") || "").trim();
+  if (!raw) return null;
+  return dateToYearMonth(raw) || raw || null;
+}
 const MONEY_ABS_MAX = 99_999_999.99;
 
 const methodSchema = z.enum(["credit", "pix_debit"]);
@@ -370,6 +374,7 @@ export async function createTransaction(formData: FormData) {
         cadence: "monthly",
         dayOfMonth,
         nextRun,
+        endsOn: parseEndsOn(formData),
         active: true,
         installmentCount: method === "credit" ? 1 : null,
       })
@@ -559,6 +564,8 @@ export async function createRecurringRule(formData: FormData) {
     String(formData.get("categoryId") || "") || null,
   );
 
+  const installmentCount = method === "credit" ? 1 : null;
+
   await db.insert(recurringRules).values({
     userId: user.id!,
     kind,
@@ -570,8 +577,9 @@ export async function createRecurringRule(formData: FormData) {
     cadence: "monthly",
     dayOfMonth,
     nextRun,
+    endsOn: parseEndsOn(formData),
     active: true,
-    installmentCount: method === "credit" ? parseInstallmentCount(formData) : null,
+    installmentCount,
   });
   revalidatePath("/recurring");
 }
@@ -680,7 +688,9 @@ export async function deleteRecurringRule(id: string) {
 
 export async function runRecurringNow() {
   const user = await requireUser();
-  await applyRecurringRules(user.id!);
+  const { ensureRecurringForMonth } = await import("@/lib/recurring");
+  const { currentYearMonth } = await import("@/lib/dates");
+  await ensureRecurringForMonth(user.id!, currentYearMonth());
   revalidatePath("/month");
   revalidatePath("/transactions");
   revalidatePath("/recurring");

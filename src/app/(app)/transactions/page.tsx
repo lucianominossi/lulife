@@ -11,7 +11,7 @@ import {
   transactions,
 } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { toNumber, yearMonthToLabel } from "@/lib/dates";
+import { toNumber, yearMonthToLabel, formatDateBR } from "@/lib/dates";
 import { TransactionForm } from "@/components/transaction-form";
 
 export default async function TransactionsPage({
@@ -51,7 +51,7 @@ export default async function TransactionsPage({
           )
         : eq(transactions.userId, user.id!),
     )
-    .orderBy(desc(transactions.createdAt));
+    .orderBy(desc(transactions.date), desc(transactions.createdAt));
 
   const txIds = rows.map((r) => r.id);
   const invoices =
@@ -131,6 +131,7 @@ export default async function TransactionsPage({
               <thead>
                 <tr className="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">
                   <th className="px-4 py-3 font-medium">Descrição</th>
+                  <th className="px-4 py-3 font-medium">Data</th>
                   <th className="px-4 py-3 font-medium">Método</th>
                   <th className="px-4 py-3 font-medium">Categoria</th>
                   <th className="px-4 py-3 font-medium">Conta</th>
@@ -148,6 +149,9 @@ export default async function TransactionsPage({
                       className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]/40"
                     >
                       <td className="px-4 py-3 font-medium">{row.description}</td>
+                      <td className="px-4 py-3 tabular-nums text-[var(--color-ink-muted)]">
+                        {formatDateBR(row.date)}
+                      </td>
                       <td className="px-4 py-3 text-[var(--color-ink-muted)]">
                         {row.method === "credit" ? "Crédito" : "Pix/Débito"}
                       </td>

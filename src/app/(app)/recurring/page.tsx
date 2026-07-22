@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import {
   deleteRecurringRule,
-  runRecurringNow,
   toggleRecurringRule,
 } from "@/app/actions";
 import { RecurringRuleForm } from "@/components/recurring-rule-form";
@@ -29,18 +28,12 @@ export default async function RecurringPage() {
         <div>
           <h1 className="text-[32px] font-bold tracking-tight">Recorrências</h1>
           <p className="mt-1 max-w-xl text-sm text-[var(--color-ink-muted)]">
-            Gerencie regras ativas (pausar, excluir, gerar). Gastos do dia a dia —
-            cobrança em conta ou compra parcelada no cartão — nascem em{" "}
+            Regras são o molde (luz, salário, assinatura). No dashboard do mês
+            Regras mensais (luz, salário, assinatura) entram sozinhas ao abrir o
+            mês corrente. Compra parcelada (3x, 5x…) não precisa de regra — use{" "}
             <span className="text-[var(--color-ink)]">+ Novo lançamento</span>.
-            Use o formulário ao lado para entradas recorrentes ou regras sem
-            lançar o mês atual.
           </p>
         </div>
-        <form action={runRecurringNow}>
-          <button type="submit" className="btn-ghost">
-            Gerar agora
-          </button>
-        </form>
       </header>
 
       <div className="grid gap-6 xl:grid-cols-[380px_1fr]">
@@ -55,7 +48,8 @@ export default async function RecurringPage() {
               </span>
             </h2>
             <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-              Excluir remove apenas lançamentos futuros gerados pela regra.
+              Pausar para de criar lançamentos. Excluir remove a regra
+              (lançamentos já criados permanecem).
             </p>
           </div>
           <div className="overflow-x-auto">
@@ -64,8 +58,8 @@ export default async function RecurringPage() {
                 <tr className="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-subtle)]">
                   <th className="px-4 py-3">Descrição</th>
                   <th className="px-4 py-3">Tipo</th>
-                  <th className="px-4 py-3">Próximo</th>
-                  <th className="px-4 py-3">Valor</th>
+                  <th className="px-4 py-3">Fim</th>
+                  <th className="px-4 py-3">Sugestão</th>
                   <th className="px-4 py-3">Ações</th>
                 </tr>
               </thead>
@@ -100,11 +94,14 @@ export default async function RecurringPage() {
                         : ""}
                       {r.kind === "expense" &&
                       r.method === "credit" &&
-                      r.installmentCount
+                      r.installmentCount &&
+                      r.installmentCount > 1
                         ? ` · ${r.installmentCount}x`
                         : ""}
                     </td>
-                    <td className="px-4 py-3">{yearMonthToLabel(r.nextRun)}</td>
+                    <td className="px-4 py-3 text-[var(--color-ink-muted)]">
+                      {r.endsOn ? yearMonthToLabel(r.endsOn) : "Sem fim"}
+                    </td>
                     <td className="px-4 py-3">
                       <Money value={toNumber(r.amount)} />
                     </td>

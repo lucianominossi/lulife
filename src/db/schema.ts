@@ -213,6 +213,8 @@ export const recurringRules = pgTable("recurring_rules", {
   cadence: text("cadence", { enum: ["monthly"] }).notNull().default("monthly"),
   dayOfMonth: integer("day_of_month").notNull().default(1),
   nextRun: text("next_run").notNull(),
+  /** Last month this rule may appear as planned (inclusive). null = no end. */
+  endsOn: text("ends_on"),
   active: boolean("active").notNull().default(true),
   installmentCount: integer("installment_count"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),

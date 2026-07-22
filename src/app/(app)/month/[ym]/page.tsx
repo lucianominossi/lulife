@@ -30,7 +30,7 @@ import {
   listMonthIncomes,
   listMonthPixDebit,
 } from "@/lib/finance";
-import { applyRecurringRules } from "@/lib/recurring";
+import { ensureRecurringForMonth } from "@/lib/recurring";
 import { requireUser } from "@/lib/session";
 import { addMonths, toNumber, yearMonthToLabel } from "@/lib/dates";
 import { deleteIncome, deleteTransaction } from "@/app/actions";
@@ -60,7 +60,7 @@ async function MonthDashboard({
 }) {
   const { ym } = await params;
   const user = await requireUser();
-  await applyRecurringRules(user.id!, ym);
+  await ensureRecurringForMonth(user.id!, ym);
 
   const prevYm = addMonths(ym, -1);
   const trendMonths = Array.from({ length: 6 }, (_, i) =>
@@ -76,7 +76,6 @@ async function MonthDashboard({
       listMonthCredit(user.id!, ym),
       ...trendMonths.map((m) => computeMonthHealth(user.id!, m)),
     ]);
-
   const db = await getDb();
   const [cats, accs] = await Promise.all([
     db.select().from(categories).where(eq(categories.userId, user.id!)),
@@ -284,7 +283,7 @@ async function MonthDashboard({
           label="Projetado"
           value={health.projetado}
           tone={health.projetado >= 0 ? "positive" : "negative"}
-          hint="Desconta orçamento restante"
+          hint="Atual − orçamento restante (+ recorrências em meses futuros)"
           icon={PiggyBank}
           iconTone="invest"
           changePct={pctChange(health.projetado, prevHealth.projetado)}
@@ -435,11 +434,12 @@ async function MonthDashboard({
         >
           {incomeList.length === 0 && <Empty />}
           <DataTable
-            headers={["Descrição", "Categoria", "Conta", "Valor", ""]}
+            headers={["Descrição", "Categoria", "Conta", "Data", "Valor", ""]}
             rows={incomeList.map((row) => [
               row.description,
               row.categoryName ?? "—",
               row.accountName ?? "—",
+              <DateWithNotes key="d" date={row.date} />,
               <Money key="m" value={toNumber(row.amount)} tone="positive" />,
               <div key="a" className="flex items-center gap-3">
                 <EditIncomeButton
@@ -514,15 +514,16 @@ async function MonthDashboard({
       <Panel title="Crédito na fatura" count={creditList.length}>
         {creditList.length === 0 && <Empty />}
         <DataTable
-          headers={["Descrição", "Categoria", "Cartão", "Valor", ""]}
+          headers={["Descrição", "Categoria", "Cartão", "Data", "Valor", ""]}
           rows={creditList.map((row) => [
             <DescriptionWithNotes
-              key="d"
+              key="desc"
               description={row.description}
               notes={row.notes}
             />,
             row.categoryName ?? "—",
             row.accountName ?? "—",
+            <DateWithNotes key="dt" date={row.date} />,
             <Money key="m" value={toNumber(row.amount)} tone="negative" />,
             <div key="a" className="flex items-center gap-3">
               <EditTransactionButton

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import {
   accounts,
@@ -8,7 +8,8 @@ import {
   transactionInvoices,
   transactions,
 } from "@/db/schema";
-import { toNumber } from "@/lib/dates";
+import { toNumber, currentYearMonth } from "@/lib/dates";
+import { sumPlannedNet } from "@/lib/recurring";
 
 export type MonthHealth = {
   totalIncome: number;
@@ -23,6 +24,8 @@ export type MonthHealth = {
     remaining: number;
   }[];
   budgetRemainingTotal: number;
+  plannedIncome: number;
+  plannedExpense: number;
   atual: number;
   projetado: number;
 };
@@ -154,8 +157,19 @@ export async function computeMonthHealth(
     0,
   );
 
+  // Future months only: virtual planned (not yet written). Past/current are real.
+  let plannedIncome = 0;
+  let plannedExpense = 0;
+  if (yearMonth > currentYearMonth()) {
+    ({ plannedIncome, plannedExpense } = await sumPlannedNet(
+      userId,
+      yearMonth,
+    ));
+  }
+
   const atual = totalIncome - totalCredit - totalPixDebit;
-  const projetado = atual - budgetRemainingTotal;
+  const projetado =
+    atual + plannedIncome - plannedExpense - budgetRemainingTotal;
 
   return {
     totalIncome,
@@ -164,6 +178,8 @@ export async function computeMonthHealth(
     creditByAccount,
     budgetRows,
     budgetRemainingTotal,
+    plannedIncome,
+    plannedExpense,
     atual,
     projetado,
   };
@@ -187,7 +203,7 @@ export async function listMonthIncomes(userId: string, yearMonth: string) {
     .leftJoin(accounts, eq(incomes.accountId, accounts.id))
     .leftJoin(categories, eq(incomes.categoryId, categories.id))
     .where(and(eq(incomes.userId, userId), eq(incomes.yearMonth, yearMonth)))
-    .orderBy(asc(incomes.date));
+    .orderBy(desc(incomes.date));
 }
 
 export async function listMonthPixDebit(userId: string, yearMonth: string) {
@@ -216,7 +232,7 @@ export async function listMonthPixDebit(userId: string, yearMonth: string) {
         eq(transactions.yearMonth, yearMonth),
       ),
     )
-    .orderBy(asc(transactions.date));
+    .orderBy(desc(transactions.date));
 }
 
 export async function listMonthCredit(userId: string, yearMonth: string) {
@@ -248,5 +264,5 @@ export async function listMonthCredit(userId: string, yearMonth: string) {
         eq(transactionInvoices.yearMonth, yearMonth),
       ),
     )
-    .orderBy(asc(transactions.date));
+    .orderBy(desc(transactions.date));
 }

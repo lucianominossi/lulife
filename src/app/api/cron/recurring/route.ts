@@ -2,7 +2,8 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { applyRecurringRules } from "@/lib/recurring";
+import { ensureRecurringForMonth } from "@/lib/recurring";
+import { currentYearMonth } from "@/lib/dates";
 
 function bearerMatches(header: string | null, secret: string): boolean {
   if (!header?.startsWith("Bearer ")) return false;
@@ -21,10 +22,11 @@ export async function GET(request: Request) {
 
   const db = await getDb();
   const allUsers = await db.select({ id: users.id }).from(users);
+  const ym = currentYearMonth();
   let total = 0;
   for (const u of allUsers) {
-    total += await applyRecurringRules(u.id);
+    total += await ensureRecurringForMonth(u.id, ym);
   }
 
-  return NextResponse.json({ ok: true, created: total });
+  return NextResponse.json({ ok: true, created: total, yearMonth: ym });
 }

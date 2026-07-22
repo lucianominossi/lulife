@@ -123,6 +123,7 @@ async function migratePglite(client: PGlite) {
       cadence TEXT NOT NULL DEFAULT 'monthly',
       day_of_month INTEGER NOT NULL DEFAULT 1,
       next_run TEXT NOT NULL,
+      ends_on TEXT,
       active BOOLEAN NOT NULL DEFAULT TRUE,
       installment_count INTEGER,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -185,6 +186,8 @@ async function migratePglite(client: PGlite) {
       count INTEGER NOT NULL DEFAULT 0,
       window_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    ALTER TABLE recurring_rules ADD COLUMN IF NOT EXISTS ends_on TEXT;
   `);
 }
 
