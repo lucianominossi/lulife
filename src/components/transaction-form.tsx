@@ -22,6 +22,7 @@ export function TransactionForm({
   const [open, setOpen] = useState(true);
   const [method, setMethod] = useState<"credit" | "pix_debit">("credit");
   const [date, setDate] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [faturaClosed, setFaturaClosed] = useState(false);
   const { toast, setToast, clearToast } = useSuccessToast();
 
@@ -47,9 +48,6 @@ export function TransactionForm({
         <form
           action={async (fd) => {
             await createTransaction(fd);
-            setDate("");
-            setMethod("credit");
-            setFaturaClosed(false);
             setToast("Gasto cadastrado com sucesso.");
           }}
           className="panel h-fit space-y-3 p-5"
@@ -88,7 +86,10 @@ export function TransactionForm({
           <select
             name="method"
             value={method}
-            onChange={(e) => setMethod(e.target.value as "credit" | "pix_debit")}
+            onChange={(e) => {
+              setMethod(e.target.value as "credit" | "pix_debit");
+              setAccountId("");
+            }}
             className="input-field"
           >
             <option value="credit">Cartão de crédito</option>
@@ -105,7 +106,8 @@ export function TransactionForm({
               <select
                 name="accountId"
                 className="input-field"
-                defaultValue=""
+                value={accountId}
+                onChange={(e) => setAccountId(e.target.value)}
                 required
               >
                 <option value="" disabled>
@@ -134,7 +136,12 @@ export function TransactionForm({
               </label>
             </>
           ) : (
-            <select name="accountId" className="input-field" defaultValue="">
+            <select
+              name="accountId"
+              className="input-field"
+              value={accountId}
+              onChange={(e) => setAccountId(e.target.value)}
+            >
               <option value="">Conta (opcional)</option>
               {bankAccounts.map((a) => (
                 <option key={a.id} value={a.id}>

@@ -6,9 +6,11 @@ import { yearMonthOptions, yearMonthToLabel } from "@/lib/dates";
 export function FaturaSelector({
   yearMonth,
   method,
+  account,
 }: {
   yearMonth: string;
   method?: string | null;
+  account?: string | null;
 }) {
   const router = useRouter();
   const choices = yearMonthOptions(yearMonth);
@@ -17,6 +19,7 @@ export function FaturaSelector({
     const params = new URLSearchParams();
     params.set("ym", nextYm);
     if (method) params.set("method", method);
+    if (account) params.set("account", account);
     router.push(`/transactions?${params.toString()}`);
   }
 
