@@ -1,6 +1,7 @@
 import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { deleteTransaction } from "@/app/actions";
+import { CategoryFilter } from "@/components/category-filter";
 import { EditTransactionButton } from "@/components/edit-record";
 import { FaturaSelector } from "@/components/fatura-selector";
 import { Money } from "@/components/money";
@@ -24,11 +25,13 @@ function transactionsHref(opts: {
   ym: string;
   method?: string | null;
   account?: string | null;
+  category?: string | null;
 }) {
   const params = new URLSearchParams();
   params.set("ym", opts.ym);
   if (opts.method) params.set("method", opts.method);
   if (opts.account) params.set("account", opts.account);
+  if (opts.category) params.set("category", opts.category);
   return `/transactions?${params.toString()}`;
 }
 
@@ -137,6 +140,7 @@ export default async function TransactionsPage({
     q?: string;
     ym?: string;
     account?: string;
+    category?: string;
   }>;
 }) {
   const sp = await searchParams;
@@ -166,6 +170,14 @@ export default async function TransactionsPage({
   const ownedAccountIds = new Set(accountMeta.map((a) => a.id));
   const accountFilter =
     sp.account && ownedAccountIds.has(sp.account) ? sp.account : null;
+
+  const ownedCategoryIds = new Set(cats.map((c) => c.id));
+  const categoryFilter =
+    sp.category === "none"
+      ? "none"
+      : sp.category && ownedCategoryIds.has(sp.category)
+        ? sp.category
+        : null;
 
   const rows = [...creditRows, ...pixRows].sort((a, b) => {
     const dateA = a.date ?? "";
@@ -209,9 +221,37 @@ export default async function TransactionsPage({
     });
   })();
 
-  const filtered = accountFilter
+  const categoriesInMonth = (() => {
+    const seen = new Map<string, { id: string; name: string }>();
+    let hasUncategorized = false;
+    for (const row of searchFiltered) {
+      if (!row.categoryId) {
+        hasUncategorized = true;
+        continue;
+      }
+      if (!seen.has(row.categoryId)) {
+        seen.set(row.categoryId, {
+          id: row.categoryId,
+          name: row.categoryName ?? "Categoria",
+        });
+      }
+    }
+    const options = [...seen.values()].sort((a, b) =>
+      a.name.localeCompare(b.name, "pt-BR"),
+    );
+    return { options, hasUncategorized };
+  })();
+
+  const afterAccount = accountFilter
     ? searchFiltered.filter((r) => r.accountId === accountFilter)
     : searchFiltered;
+
+  const filtered =
+    categoryFilter === "none"
+      ? afterAccount.filter((r) => !r.categoryId)
+      : categoryFilter
+        ? afterAccount.filter((r) => r.categoryId === categoryFilter)
+        : afterAccount;
 
   const groups = groupTransactionsByAccount(filtered, accountMeta);
   const listTotal = filtered.reduce((s, r) => s + toNumber(r.amount), 0);
@@ -219,7 +259,11 @@ export default async function TransactionsPage({
 
   const methodLinks = [
     {
-      href: transactionsHref({ ym: yearMonth, account: accountFilter }),
+      href: transactionsHref({
+        ym: yearMonth,
+        account: accountFilter,
+        category: categoryFilter,
+      }),
       label: "Todos",
       active: !methodFilter,
     },
@@ -228,6 +272,7 @@ export default async function TransactionsPage({
         ym: yearMonth,
         method: "credit",
         account: accountFilter,
+        category: categoryFilter,
       }),
       label: "Crédito",
       active: methodFilter === "credit",
@@ -237,6 +282,7 @@ export default async function TransactionsPage({
         ym: yearMonth,
         method: "pix_debit",
         account: accountFilter,
+        category: categoryFilter,
       }),
       label: "Pix/Débito",
       active: methodFilter === "pix_debit",
@@ -257,6 +303,15 @@ export default async function TransactionsPage({
             yearMonth={yearMonth}
             method={methodFilter}
             account={accountFilter}
+            category={categoryFilter}
+          />
+          <CategoryFilter
+            yearMonth={yearMonth}
+            method={methodFilter}
+            account={accountFilter}
+            category={categoryFilter}
+            options={categoriesInMonth.options}
+            hasUncategorized={categoriesInMonth.hasUncategorized}
           />
           <div className="flex flex-wrap gap-2">
             {methodLinks.map((f) => (
@@ -275,7 +330,11 @@ export default async function TransactionsPage({
       {accountsInMonth.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <Link
-            href={transactionsHref({ ym: yearMonth, method: methodFilter })}
+            href={transactionsHref({
+              ym: yearMonth,
+              method: methodFilter,
+              category: categoryFilter,
+            })}
             className={methodChipClass(!accountFilter)}
           >
             Todas as contas
@@ -292,6 +351,7 @@ export default async function TransactionsPage({
                   ym: yearMonth,
                   method: methodFilter,
                   account: a.id,
+                  category: categoryFilter,
                 })}
                 className={accountChipClass(active)}
                 style={{
