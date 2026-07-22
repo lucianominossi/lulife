@@ -5,6 +5,7 @@ import { CategoryFilter } from "@/components/category-filter";
 import { EditTransactionButton } from "@/components/edit-record";
 import { FaturaSelector } from "@/components/fatura-selector";
 import { Money } from "@/components/money";
+import { DescriptionWithNotes } from "@/components/notes-hint";
 import { TransactionForm } from "@/components/transaction-form";
 import { getDb } from "@/db";
 import { accounts, categories, transactionInvoices } from "@/db/schema";
@@ -478,7 +479,10 @@ export default async function TransactionsPage({
                               className="border-t border-[var(--color-border)] hover:bg-[var(--color-surface-2)]/40"
                             >
                               <td className="px-4 py-3 font-medium">
-                                {row.description}
+                                <DescriptionWithNotes
+                                  description={row.description}
+                                  notes={row.notes}
+                                />
                               </td>
                               <td className="px-4 py-3 tabular-nums text-[var(--color-ink-muted)]">
                                 {formatDateBR(row.date)}
