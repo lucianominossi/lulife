@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AuthShell({
   title,
@@ -38,9 +37,6 @@ export function AuthShell({
       </section>
 
       <section className="relative flex items-center justify-center px-6 py-16">
-        <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
-          <ThemeToggle compact />
-        </div>
         <div className="w-full max-w-md">
           <Link href="/login" className="mb-2 flex items-center gap-2 lg:hidden">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">

@@ -8,6 +8,7 @@ import {
   ProfileNameForm,
   ProfilePasswordForm,
 } from "@/components/profile-forms";
+import { ThemePreference } from "@/components/theme-toggle";
 import { requireUser } from "@/lib/session";
 
 export default async function ProfilePage() {
@@ -19,7 +20,7 @@ export default async function ProfilePage() {
         <div>
           <h1 className="text-[32px] font-bold tracking-tight">Perfil</h1>
           <p className="mt-1 text-[var(--color-ink-muted)]">
-            Dados da conta, segurança e privacidade
+            Dados da conta, aparência, segurança e privacidade
           </p>
         </div>
         <form action={signOutAndInvalidate}>
@@ -48,6 +49,14 @@ export default async function ProfilePage() {
             endereço.
           </p>
           <ProfileEmailForm defaultEmail={user.email} />
+        </section>
+
+        <section className="panel space-y-3 p-5 lg:col-span-2">
+          <h2 className="font-display text-lg font-semibold">Aparência</h2>
+          <p className="text-sm text-[var(--color-ink-muted)]">
+            Tema claro ou escuro neste dispositivo. Não altera dados da conta.
+          </p>
+          <ThemePreference />
         </section>
 
         <section className="panel space-y-3 p-5 lg:col-span-2">

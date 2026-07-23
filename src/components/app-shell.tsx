@@ -21,7 +21,6 @@ import {
 import { signOutAndInvalidate } from "@/app/actions/auth";
 import { IconBox } from "@/components/ui/icon-box";
 import { PrivacyProvider, usePrivacy } from "@/components/privacy-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/month", label: "Dashboard", match: "/month", icon: CalendarDays },
@@ -254,7 +253,6 @@ export function AppShell({
 
           <div className="mt-4 space-y-3">
             <UpgradeCard />
-            <ThemeToggle />
             <PrivacyToggle />
             <UserAvatar name={user?.name} email={user?.email ?? undefined} />
           </div>
@@ -269,7 +267,6 @@ export function AppShell({
               <span className="text-lg font-bold tracking-tight">Lulife</span>
             </Link>
             <div className="flex items-center gap-1">
-              <ThemeToggle compact />
               <PrivacyToggle compact />
               <button
                 type="button"
