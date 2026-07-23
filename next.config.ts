@@ -5,9 +5,10 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: "10mb",
     },
-    // Reuse visited dynamic RSC payloads briefly (cold/first visit unchanged).
+    // Reuse visited dynamic RSC payloads for 30 min on SPA revisits.
+    // Hard refresh always refetches; mutations call revalidatePath to clear.
     staleTimes: {
-      dynamic: 30,
+      dynamic: 30 * 60,
       static: 180,
     },
   },

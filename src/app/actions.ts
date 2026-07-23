@@ -1,7 +1,6 @@
 "use server";
 
 import { and, eq, gt, inArray } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getDb } from "@/db";
 import {
@@ -25,6 +24,7 @@ import {
   assertOwnedAccount,
   assertOwnedCategory,
 } from "@/lib/ownership";
+import { revalidateFinance } from "@/lib/revalidate-finance";
 
 function parseEndsOn(formData: FormData): string | null {
   const raw = String(formData.get("endsOn") || "").trim();
@@ -131,10 +131,10 @@ export async function createCategoryInline({
     })
     .returning();
 
-  revalidatePath("/settings");
-  revalidatePath("/transactions");
-  revalidatePath("/recurring");
-  revalidatePath("/month");
+  revalidateFinance({
+    includeSettings: true,
+    includeRecurring: true,
+  });
 
   return {
     ok: true,
@@ -150,7 +150,7 @@ export async function deleteCategory(id: string) {
   await db
     .delete(categories)
     .where(and(eq(categories.id, id), eq(categories.userId, user.id!)));
-  revalidatePath("/settings");
+  revalidateFinance({ includeSettings: true });
 }
 
 export async function createAccount(formData: FormData) {
@@ -162,7 +162,7 @@ export async function createAccount(formData: FormData) {
     name: String(formData.get("name")).trim(),
     type,
   });
-  revalidatePath("/settings");
+  revalidateFinance({ includeSettings: true });
 }
 
 export async function deleteAccount(id: string) {
@@ -171,7 +171,7 @@ export async function deleteAccount(id: string) {
   await db
     .delete(accounts)
     .where(and(eq(accounts.id, id), eq(accounts.userId, user.id!)));
-  revalidatePath("/settings");
+  revalidateFinance({ includeSettings: true });
 }
 
 export async function upsertBudget(formData: FormData) {
@@ -210,8 +210,7 @@ export async function upsertBudget(formData: FormData) {
       plannedAmount,
     });
   }
-  revalidatePath(`/month/${yearMonth}`);
-  revalidatePath("/settings");
+  revalidateFinance({ yearMonths: [yearMonth], includeSettings: true });
 }
 
 export async function deleteBudget(id: string) {
@@ -220,8 +219,7 @@ export async function deleteBudget(id: string) {
   await db
     .delete(budgets)
     .where(and(eq(budgets.id, id), eq(budgets.userId, user.id!)));
-  revalidatePath("/settings");
-  revalidatePath("/month");
+  revalidateFinance({ includeSettings: true });
 }
 
 export async function createIncome(formData: FormData) {
@@ -246,8 +244,7 @@ export async function createIncome(formData: FormData) {
     categoryId,
     yearMonth,
   });
-  revalidatePath(`/month/${yearMonth}`);
-  revalidatePath("/transactions");
+  revalidateFinance({ yearMonths: [yearMonth] });
 }
 
 export async function updateIncome(formData: FormData) {
@@ -277,9 +274,7 @@ export async function updateIncome(formData: FormData) {
     })
     .where(and(eq(incomes.id, id), eq(incomes.userId, user.id!)));
 
-  revalidatePath(`/month/${yearMonth}`);
-  revalidatePath("/month");
-  revalidatePath("/transactions");
+  revalidateFinance({ yearMonths: [yearMonth] });
 }
 
 export async function deleteIncome(id: string, yearMonth: string) {
@@ -288,7 +283,7 @@ export async function deleteIncome(id: string, yearMonth: string) {
   await db
     .delete(incomes)
     .where(and(eq(incomes.id, id), eq(incomes.userId, user.id!)));
-  revalidatePath(`/month/${yearMonth}`);
+  revalidateFinance({ yearMonths: [yearMonth] });
 }
 
 function resolveExpenseMonths(formData: FormData) {
@@ -411,12 +406,14 @@ export async function createTransaction(formData: FormData) {
     );
   }
 
-  revalidatePath("/transactions");
-  if (yearMonth) revalidatePath(`/month/${yearMonth}`);
-  for (const ym of invoiceMonths) {
-    revalidatePath(`/month/${ym}`);
-  }
-  if (recurringRuleId) revalidatePath("/recurring");
+  const yearMonths = [
+    ...(yearMonth ? [yearMonth] : []),
+    ...invoiceMonths,
+  ];
+  revalidateFinance({
+    yearMonths,
+    includeRecurring: Boolean(recurringRuleId),
+  });
 }
 
 export async function updateTransaction(formData: FormData) {
@@ -483,21 +480,39 @@ export async function updateTransaction(formData: FormData) {
   ]);
   if (yearMonth) monthsToRevalidate.add(yearMonth);
 
-  revalidatePath("/transactions");
-  revalidatePath("/month");
-  for (const ym of monthsToRevalidate) {
-    revalidatePath(`/month/${ym}`);
-  }
+  revalidateFinance({
+    yearMonths: [...monthsToRevalidate],
+  });
 }
 
 export async function deleteTransaction(id: string) {
   const user = await requireUser();
   const db = await getDb();
+
+  const [existing] = await db
+    .select({
+      yearMonth: transactions.yearMonth,
+    })
+    .from(transactions)
+    .where(and(eq(transactions.id, id), eq(transactions.userId, user.id!)))
+    .limit(1);
+
+  const invoiceRows = existing
+    ? await db
+        .select({ yearMonth: transactionInvoices.yearMonth })
+        .from(transactionInvoices)
+        .where(eq(transactionInvoices.transactionId, id))
+    : [];
+
+  const yearMonths = [
+    ...(existing?.yearMonth ? [existing.yearMonth] : []),
+    ...invoiceRows.map((r) => r.yearMonth),
+  ];
+
   await db
     .delete(transactions)
     .where(and(eq(transactions.id, id), eq(transactions.userId, user.id!)));
-  revalidatePath("/transactions");
-  revalidatePath("/month");
+  revalidateFinance({ yearMonths });
 }
 
 export async function createInvestment(formData: FormData) {
@@ -512,7 +527,10 @@ export async function createInvestment(formData: FormData) {
     asOfDate: String(formData.get("asOfDate") || "") || null,
     notes: String(formData.get("notes") || "") || null,
   });
-  revalidatePath("/investments");
+  revalidateFinance({
+    includeInvestments: true,
+    includeMonthAndTransactions: false,
+  });
 }
 
 export async function updateInvestment(formData: FormData) {
@@ -531,7 +549,10 @@ export async function updateInvestment(formData: FormData) {
       updatedAt: new Date(),
     })
     .where(and(eq(investments.id, id), eq(investments.userId, user.id!)));
-  revalidatePath("/investments");
+  revalidateFinance({
+    includeInvestments: true,
+    includeMonthAndTransactions: false,
+  });
 }
 
 export async function deleteInvestment(id: string) {
@@ -540,7 +561,10 @@ export async function deleteInvestment(id: string) {
   await db
     .delete(investments)
     .where(and(eq(investments.id, id), eq(investments.userId, user.id!)));
-  revalidatePath("/investments");
+  revalidateFinance({
+    includeInvestments: true,
+    includeMonthAndTransactions: false,
+  });
 }
 
 export async function createRecurringRule(formData: FormData) {
@@ -581,7 +605,7 @@ export async function createRecurringRule(formData: FormData) {
     active: true,
     installmentCount,
   });
-  revalidatePath("/recurring");
+  revalidateFinance({ includeRecurring: true });
 }
 
 export async function toggleRecurringRule(id: string, active: boolean) {
@@ -593,7 +617,7 @@ export async function toggleRecurringRule(id: string, active: boolean) {
     .where(
       and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id!)),
     );
-  revalidatePath("/recurring");
+  revalidateFinance({ includeRecurring: true });
 }
 
 export async function deleteRecurringRule(id: string) {
@@ -681,9 +705,7 @@ export async function deleteRecurringRule(id: string) {
       and(eq(recurringRules.id, id), eq(recurringRules.userId, user.id!)),
     );
 
-  revalidatePath("/recurring");
-  revalidatePath("/transactions");
-  revalidatePath("/month");
+  revalidateFinance({ includeRecurring: true });
 }
 
 export async function runRecurringNow() {
@@ -691,9 +713,7 @@ export async function runRecurringNow() {
   const { ensureRecurringForMonth } = await import("@/lib/recurring");
   const { currentYearMonth } = await import("@/lib/dates");
   await ensureRecurringForMonth(user.id!, currentYearMonth());
-  revalidatePath("/month");
-  revalidatePath("/transactions");
-  revalidatePath("/recurring");
+  revalidateFinance({ includeRecurring: true });
 }
 
 export async function listUserMeta() {
