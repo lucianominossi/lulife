@@ -59,11 +59,11 @@ function PrivacyToggle({ compact }: { compact?: boolean }) {
       title={label}
       className={
         compact
-          ? "btn-ghost flex h-10 w-10 items-center justify-center p-0"
+          ? "btn-ghost flex h-11 w-11 items-center justify-center p-0"
           : "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--color-sidebar-ink)]"
       }
     >
-      <Icon size={compact ? 22 : 16} />
+      <Icon size={compact ? 26 : 16} strokeWidth={compact ? 2.25 : 2} />
       {!compact && <span>{label}</span>}
     </button>
   );
@@ -271,11 +271,11 @@ export function AppShell({
               <button
                 type="button"
                 onClick={() => setMobileOpen((v) => !v)}
-                className="btn-ghost flex h-10 w-10 items-center justify-center p-0"
+                className="btn-ghost flex h-11 w-11 items-center justify-center p-0"
                 aria-expanded={mobileOpen}
                 aria-label="Menu"
               >
-                {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+                {mobileOpen ? <X size={26} strokeWidth={2.25} /> : <Menu size={26} strokeWidth={2.25} />}
               </button>
             </div>
           </div>
@@ -300,8 +300,8 @@ export function AppShell({
           </AnimatePresence>
         </div>
 
-        <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-          <div className="animate-fade-in mx-auto w-full max-w-[1280px]">
+        <main className="min-w-0 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="animate-fade-in mx-auto w-full min-w-0 max-w-[1280px]">
             {children}
           </div>
         </main>

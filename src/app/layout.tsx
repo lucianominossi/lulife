@@ -11,13 +11,25 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Lulife",
   description: "Controle financeiro pessoal",
-  icons: { icon: "/favicon.svg" },
+  icons: { icon: "/favicon.svg", apple: "/favicon.svg" },
+  appleWebApp: {
+    capable: true,
+    title: "Lulife",
+    statusBarStyle: "black-translucent",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#0B0F17",
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#F8F9FC" },
+    { media: "(prefers-color-scheme: dark)", color: "#0B0F17" },
+  ],
 };
 
 export default function RootLayout({
@@ -35,6 +47,10 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
+        <div id="boot-splash" className="boot-splash" aria-hidden="true">
+          <span className="boot-splash-mark">L</span>
+          <span className="boot-splash-spinner" />
+        </div>
         <Providers>{children}</Providers>
       </body>
     </html>

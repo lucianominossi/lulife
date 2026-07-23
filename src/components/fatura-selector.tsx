@@ -32,7 +32,7 @@ export function FaturaSelector({
       <select
         value={yearMonth}
         onChange={(e) => onChange(e.target.value)}
-        className="input-field min-w-[180px]"
+        className="input-field w-full max-w-full sm:min-w-[180px]"
       >
         {choices.map((ym) => (
           <option key={ym} value={ym}>

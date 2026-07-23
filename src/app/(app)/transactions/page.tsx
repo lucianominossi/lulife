@@ -2,6 +2,7 @@ import { eq, inArray } from "drizzle-orm";
 import Link from "next/link";
 import { deleteTransaction } from "@/app/actions";
 import { CategoryFilter } from "@/components/category-filter";
+import { DeleteButton } from "@/components/delete-button";
 import { EditTransactionButton } from "@/components/edit-record";
 import { FaturaSelector } from "@/components/fatura-selector";
 import { Money } from "@/components/money";
@@ -291,15 +292,15 @@ export default async function TransactionsPage({
   ];
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
+    <div className="min-w-0 space-y-6">
+      <header className="flex min-w-0 flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-[32px] font-bold tracking-tight">Gastos</h1>
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
             Crédito e Pix/Débito · {yearMonthToLabel(yearMonth)}
           </p>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
+        <div className="flex min-w-0 max-w-full flex-wrap items-end gap-3">
           <FaturaSelector
             yearMonth={yearMonth}
             method={methodFilter}
@@ -314,7 +315,7 @@ export default async function TransactionsPage({
             options={categoriesInMonth.options}
             hasUncategorized={categoriesInMonth.hasUncategorized}
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-w-full flex-wrap gap-2">
             {methodLinks.map((f) => (
               <Link
                 key={f.href}
@@ -329,7 +330,7 @@ export default async function TransactionsPage({
       </header>
 
       {accountsInMonth.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex max-w-full flex-wrap gap-2">
           <Link
             href={transactionsHref({
               ym: yearMonth,
@@ -380,10 +381,12 @@ export default async function TransactionsPage({
         </div>
       )}
 
-      <div className="grid items-start gap-6 xl:grid-cols-[320px_1fr]">
-        <TransactionForm categories={cats} accounts={accs} />
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <div className="min-w-0 max-w-full">
+          <TransactionForm categories={cats} accounts={accs} />
+        </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 max-w-full space-y-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
             <h2 className="font-display text-lg font-semibold">
               Lista{" "}
@@ -412,11 +415,11 @@ export default async function TransactionsPage({
               return (
                 <section
                   key={group.key}
-                  className="panel overflow-hidden border-l-4"
+                  className="panel min-w-0 overflow-hidden border-l-4"
                   style={{ borderLeftColor: color }}
                 >
                   <div
-                    className="flex flex-wrap items-center justify-between gap-3 px-5 py-3"
+                    className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5"
                     style={{ background: softAccent(color, 12) }}
                   >
                     <div className="min-w-0">
@@ -453,7 +456,73 @@ export default async function TransactionsPage({
                       className="shrink-0 font-semibold"
                     />
                   </div>
-                  <div className="overflow-x-auto">
+
+                  {/* Mobile cards */}
+                  <ul className="divide-y divide-[var(--border)] md:hidden">
+                    {group.rows.map((row) => {
+                      const invs = invoicesByTx.get(row.id) ?? [];
+                      return (
+                        <li key={row.id} className="space-y-2 px-4 py-3.5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium leading-snug">
+                                <DescriptionWithNotes
+                                  description={row.description}
+                                  notes={row.notes}
+                                />
+                              </p>
+                              <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                                {formatDateBR(row.date)} ·{" "}
+                                {row.method === "credit"
+                                  ? "Crédito"
+                                  : "Pix/Débito"}
+                                {row.categoryName
+                                  ? ` · ${row.categoryName}`
+                                  : ""}
+                              </p>
+                              <p className="mt-0.5 text-xs text-[var(--color-brand)]">
+                                {invs.length
+                                  ? invs.map(yearMonthToLabel).join(", ")
+                                  : row.yearMonth
+                                    ? yearMonthToLabel(row.yearMonth)
+                                    : "—"}
+                              </p>
+                            </div>
+                            <Money
+                              value={toNumber(row.amount)}
+                              className="shrink-0 font-semibold"
+                            />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <EditTransactionButton
+                              record={{
+                                id: row.id,
+                                description: row.description,
+                                amount: row.amount,
+                                date: row.date,
+                                method: row.method,
+                                yearMonth: row.yearMonth,
+                                accountId: row.accountId,
+                                categoryId: row.categoryId,
+                                notes: row.notes,
+                                invoices: invs,
+                              }}
+                              categories={cats}
+                              accounts={accs}
+                            />
+                            <form
+                              action={deleteTransaction.bind(null, row.id)}
+                            >
+                              <DeleteButton />
+                            </form>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+
+                  {/* Desktop table */}
+                  <div className="hidden overflow-x-auto md:block">
                     <table className="w-full min-w-[640px] text-left text-sm">
                       <thead>
                         <tr className="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">
@@ -529,12 +598,7 @@ export default async function TransactionsPage({
                                       row.id,
                                     )}
                                   >
-                                    <button
-                                      type="submit"
-                                      className="text-xs text-[var(--color-ink-muted)] hover:text-[var(--color-danger)]"
-                                    >
-                                      excluir
-                                    </button>
+                                    <DeleteButton />
                                   </form>
                                 </div>
                               </td>

@@ -35,6 +35,7 @@ import { ensureRecurringForMonth } from "@/lib/recurring";
 import { requireUser } from "@/lib/session";
 import { addMonths, toNumber, yearMonthToLabel } from "@/lib/dates";
 import { deleteIncome, deleteTransaction } from "@/app/actions";
+import { DeleteButton } from "@/components/delete-button";
 import { getCategoryStyle } from "@/lib/category-style";
 
 function pctChange(current: number, previous: number): number | null {
@@ -161,12 +162,7 @@ async function MonthDashboard({
       ),
       remove: (
         <form action={deleteIncome.bind(null, row.id, ym)}>
-          <button
-            type="submit"
-            className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)]"
-          >
-            excluir
-          </button>
+          <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
         </form>
       ),
     })),
@@ -196,12 +192,7 @@ async function MonthDashboard({
       ),
       remove: (
         <form action={deleteTransaction.bind(null, row.id)}>
-          <button
-            type="submit"
-            className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)]"
-          >
-            excluir
-          </button>
+          <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
         </form>
       ),
     })),
@@ -232,12 +223,7 @@ async function MonthDashboard({
       ),
       remove: (
         <form action={deleteTransaction.bind(null, row.id)}>
-          <button
-            type="submit"
-            className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)]"
-          >
-            excluir
-          </button>
+          <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
         </form>
       ),
     })),
@@ -457,12 +443,7 @@ async function MonthDashboard({
                   accounts={accs}
                 />
                 <form action={deleteIncome.bind(null, row.id, ym)}>
-                  <button
-                    type="submit"
-                    className="text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-danger)]"
-                  >
-                    excluir
-                  </button>
+                  <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
                 </form>
               </div>,
             ])}
@@ -499,12 +480,7 @@ async function MonthDashboard({
                   accounts={accs}
                 />
                 <form action={deleteTransaction.bind(null, row.id)}>
-                  <button
-                    type="submit"
-                    className="text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-danger)]"
-                  >
-                    excluir
-                  </button>
+                  <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
                 </form>
               </div>,
             ])}
@@ -544,12 +520,7 @@ async function MonthDashboard({
                 accounts={accs}
               />
               <form action={deleteTransaction.bind(null, row.id)}>
-                <button
-                  type="submit"
-                  className="text-xs text-[var(--color-ink-subtle)] hover:text-[var(--color-danger)]"
-                >
-                  excluir
-                </button>
+                <DeleteButton className="text-xs text-[var(--color-ink-subtle)] transition hover:text-[var(--color-danger)] disabled:opacity-60" />
               </form>
             </div>,
           ])}

@@ -35,12 +35,12 @@ export function TransactionForm({
   const bankAccounts = accounts.filter((a) => a.type === "bank");
 
   return (
-    <div className="w-full self-start">
+    <div className="w-full min-w-0 max-w-full self-start">
       {!open ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="panel h-fit w-full border-dashed py-8 text-sm font-medium text-[var(--color-brand)]"
+          className="panel h-fit w-full max-w-full border-dashed py-8 text-sm font-medium text-[var(--color-brand)]"
         >
           + Novo gasto
         </button>
@@ -50,7 +50,7 @@ export function TransactionForm({
             await createTransaction(fd);
             setToast("Gasto cadastrado com sucesso.");
           }}
-          className="panel h-fit space-y-3 p-5"
+          className="panel h-fit w-full max-w-full min-w-0 space-y-3 overflow-hidden p-4 sm:p-5"
         >
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Novo gasto</h2>

@@ -34,7 +34,7 @@ export function CategoryFilter({
       <select
         value={category ?? ""}
         onChange={(e) => onChange(e.target.value)}
-        className="input-field min-w-[180px]"
+        className="input-field w-full max-w-full sm:min-w-[180px]"
       >
         <option value="">Todas</option>
         {options.map((c) => (
