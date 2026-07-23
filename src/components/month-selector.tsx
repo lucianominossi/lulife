@@ -62,7 +62,7 @@ export function MonthDashboardFrame({
               aria-label="Mês anterior"
               disabled={isPending}
               onClick={() => go(-1)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)] transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] disabled:opacity-50"
             >
               <ChevronLeft size={18} />
             </button>
@@ -74,7 +74,7 @@ export function MonthDashboardFrame({
               aria-label="Próximo mês"
               disabled={isPending}
               onClick={() => go(1)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)] transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--ink)] disabled:opacity-50"
             >
               <ChevronRight size={18} />
             </button>

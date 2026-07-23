@@ -32,7 +32,56 @@
   --color-transport: #fb923c;
 }
 
-:root,
+/* Light palette — default when html has no .dark */
+:root {
+  --ink: #121826;
+  --ink-muted: #5c6678;
+  --ink-subtle: #8a93a3;
+  --surface: #ffffff;
+  --surface-2: #f1f4f9;
+  --surface-elevated: #ffffff;
+  --border: rgba(18, 24, 38, 0.06);
+  --border-strong: #e4e8f0;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+  --accent-soft: rgba(139, 92, 246, 0.12);
+  --brand: #3b82f6;
+  --brand-soft: rgba(59, 130, 246, 0.12);
+  --ok: #16a34a;
+  --danger: #e11d48;
+  --sidebar: #ffffff;
+  --sidebar-ink: #121826;
+  --sidebar-muted: #7a8496;
+  --page-bg: #f8f9fc;
+  --page-glow-1: rgba(139, 92, 246, 0.07);
+  --page-glow-2: rgba(59, 130, 246, 0.05);
+  --input-bg: #ffffff;
+  --chart-grid: #e8ecf3;
+  --shadow-card: 0 4px 24px rgba(18, 24, 38, 0.06);
+  --shadow-card-hover: 0 8px 28px rgba(18, 24, 38, 0.1);
+
+  --hover-fill: rgba(18, 24, 38, 0.04);
+  --overlay: rgba(18, 24, 38, 0.35);
+  --glass-bg: rgba(255, 255, 255, 0.78);
+  --accent-ink: #6d28d9;
+  --tooltip-bg: #ffffff;
+  --tooltip-border: rgba(18, 24, 38, 0.08);
+  --panel-hover-border: rgba(18, 24, 38, 0.1);
+  --ghost-hover-border: rgba(18, 24, 38, 0.12);
+  --shimmer-a: rgba(18, 24, 38, 0.03);
+  --shimmer-b: rgba(18, 24, 38, 0.08);
+  --scrollbar: #c5cad6;
+  --dashed-border: rgba(18, 24, 38, 0.12);
+  --btn-primary-shadow: 0 4px 16px rgba(139, 92, 246, 0.28);
+  --chart-income: #16a34a;
+  --chart-expense: #e11d48;
+  --chart-invest: #2563eb;
+  --chart-tick: #8a93a3;
+  --chart-label: #5c6678;
+  --on-accent: #ffffff;
+}
+
+/* Dark palette — identical to previous single theme */
 .dark {
   --ink: #ffffff;
   --ink-muted: #b4bdc9;
@@ -59,6 +108,26 @@
   --chart-grid: #1e2636;
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.25);
   --shadow-card-hover: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  --hover-fill: rgba(255, 255, 255, 0.05);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --glass-bg: rgba(20, 26, 35, 0.72);
+  --accent-ink: #c4b5fd;
+  --tooltip-bg: #0e131c;
+  --tooltip-border: rgba(255, 255, 255, 0.1);
+  --panel-hover-border: rgba(255, 255, 255, 0.08);
+  --ghost-hover-border: rgba(255, 255, 255, 0.12);
+  --shimmer-a: rgba(255, 255, 255, 0.04);
+  --shimmer-b: rgba(255, 255, 255, 0.12);
+  --scrollbar: #262626;
+  --dashed-border: rgba(255, 255, 255, 0.1);
+  --btn-primary-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+  --chart-income: #22c55e;
+  --chart-expense: #f43f5e;
+  --chart-invest: #3b82f6;
+  --chart-tick: #7a8596;
+  --chart-label: #b4bdc9;
+  --on-accent: #ffffff;
 }
 
 html,
@@ -104,12 +173,12 @@ body {
 
 .panel-hover:hover {
   box-shadow: var(--shadow-card-hover);
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--panel-hover-border);
   transform: translateY(-1px);
 }
 
 .glass {
-  background: rgba(20, 26, 35, 0.72);
+  background: var(--glass-bg);
   border: 1px solid var(--border);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -172,7 +241,7 @@ label:has(> input[type="checkbox"].checkbox-field):focus-within {
 .btn-primary {
   border-radius: 12px;
   background: var(--accent);
-  color: white;
+  color: var(--on-accent);
   font-weight: 600;
   padding: 0.7rem 1.1rem;
   transition:
@@ -183,7 +252,7 @@ label:has(> input[type="checkbox"].checkbox-field):focus-within {
 
 .btn-primary:hover {
   background: var(--accent-hover);
-  box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35);
+  box-shadow: var(--btn-primary-shadow);
 }
 
 .btn-primary:active {
@@ -210,7 +279,7 @@ label:has(> input[type="checkbox"].checkbox-field):focus-within {
 .btn-ghost:hover {
   background: var(--surface-2);
   color: var(--ink);
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--ghost-hover-border);
 }
 
 @keyframes fade-in-up {
@@ -251,9 +320,9 @@ label:has(> input[type="checkbox"].checkbox-field):focus-within {
 .shimmer {
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.12) 45%,
-    rgba(255, 255, 255, 0.04) 90%
+    var(--shimmer-a) 0%,
+    var(--shimmer-b) 45%,
+    var(--shimmer-a) 90%
   );
   background-size: 200% 100%;
   animation: shimmer-slide 1.25s ease-in-out infinite;
@@ -276,5 +345,5 @@ label:has(> input[type="checkbox"].checkbox-field):focus-within {
 /* Scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #262626 transparent;
+  scrollbar-color: var(--scrollbar) transparent;
 }

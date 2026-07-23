@@ -93,7 +93,7 @@ export function LoginForm() {
           <span className="text-sm text-[var(--color-ink-muted)]">Senha</span>
           <Link
             href="/forgot-password"
-            className="text-xs font-medium text-[#C4B5FD] hover:text-white"
+            className="text-xs font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
           >
             Esqueceu a senha?
           </Link>
@@ -117,7 +117,7 @@ export function LoginForm() {
           Não recebeu o email?{" "}
           <Link
             href={`/register/check-email?email=${encodeURIComponent(unverifiedEmail)}`}
-            className="font-medium text-[#C4B5FD] hover:text-white"
+            className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
           >
             Reenviar confirmação
           </Link>
@@ -137,7 +137,7 @@ export function LoginForm() {
         {loading ? (
           <span className="inline-flex items-center justify-center gap-2">
             <span
-              className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+              className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--on-accent)]/30 border-t-[var(--on-accent)]"
               aria-hidden
             />
             Entrando…
@@ -150,7 +150,7 @@ export function LoginForm() {
         Não tem conta?{" "}
         <Link
           href="/register"
-          className="font-medium text-[#C4B5FD] hover:text-white"
+          className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
         >
           Criar conta
         </Link>

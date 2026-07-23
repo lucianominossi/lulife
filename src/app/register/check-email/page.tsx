@@ -16,11 +16,11 @@ export default async function CheckEmailPage({
       subtitle="Enviamos um link de confirmação. Sem confirmar, não é possível entrar."
     >
       <div className="mt-8 space-y-4">
-        <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-[var(--color-ink-muted)]">
+        <p className="rounded-xl border border-[var(--dashed-border)] bg-[var(--hover-fill)] px-4 py-3 text-sm text-[var(--color-ink-muted)]">
           {email ? (
             <>
               Verifique a caixa de entrada de{" "}
-              <strong className="text-white">{email}</strong> (e o spam). O email
+              <strong className="text-[var(--ink)]">{email}</strong> (e o spam). O email
               é enviado pelo Supabase Auth.
             </>
           ) : (
@@ -56,7 +56,7 @@ export default async function CheckEmailPage({
           Já confirmou?{" "}
           <Link
             href="/login"
-            className="font-medium text-[#C4B5FD] hover:text-white"
+            className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
           >
             Entrar
           </Link>

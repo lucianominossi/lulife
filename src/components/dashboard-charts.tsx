@@ -19,6 +19,7 @@ import {
   HIDDEN_AMOUNT_LABEL,
   usePrivacy,
 } from "@/components/privacy-provider";
+import { useChartColors } from "@/components/use-chart-colors";
 
 type TrendPoint = {
   label: string;
@@ -44,9 +45,11 @@ function ChartTooltip({
   const { hidden } = usePrivacy();
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0E131C]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+    <div className="rounded-xl border border-[var(--tooltip-border)] bg-[var(--tooltip-bg)]/95 px-3 py-2 shadow-xl backdrop-blur-md">
       {label && (
-        <p className="mb-1.5 text-xs font-medium text-[#7A8596]">{label}</p>
+        <p className="mb-1.5 text-xs font-medium text-[var(--chart-tick)]">
+          {label}
+        </p>
       )}
       <ul className="space-y-1">
         {payload.map((p) => (
@@ -54,14 +57,14 @@ function ChartTooltip({
             key={p.name}
             className="flex items-center justify-between gap-4 text-sm"
           >
-            <span className="flex items-center gap-2 text-[#B4BDC9]">
+            <span className="flex items-center gap-2 text-[var(--chart-label)]">
               <span
                 className="h-2 w-2 rounded-full"
                 style={{ background: p.color }}
               />
               {p.name}
             </span>
-            <span className="tabular-nums font-medium text-white">
+            <span className="tabular-nums font-medium text-[var(--ink)]">
               {hidden ? HIDDEN_AMOUNT_LABEL : formatBRL(p.value)}
             </span>
           </li>
@@ -73,6 +76,7 @@ function ChartTooltip({
 
 export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
   const { hidden } = usePrivacy();
+  const chart = useChartColors();
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -98,27 +102,43 @@ export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
           >
             <defs>
               <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22C55E" stopOpacity={0.35} />
-                <stop offset="100%" stopColor="#22C55E" stopOpacity={0} />
+                <stop
+                  offset="0%"
+                  stopColor={chart.income}
+                  stopOpacity={0.35}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={chart.income}
+                  stopOpacity={0}
+                />
               </linearGradient>
               <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F43F5E" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="#F43F5E" stopOpacity={0} />
+                <stop
+                  offset="0%"
+                  stopColor={chart.expense}
+                  stopOpacity={0.25}
+                />
+                <stop
+                  offset="100%"
+                  stopColor={chart.expense}
+                  stopOpacity={0}
+                />
               </linearGradient>
             </defs>
             <CartesianGrid
               strokeDasharray="3 3"
-              stroke="var(--chart-grid)"
+              stroke={chart.grid}
               vertical={false}
             />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 12, fill: "#7A8596" }}
+              tick={{ fontSize: 12, fill: chart.tick }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: "#7A8596" }}
+              tick={{ fontSize: 12, fill: chart.tick }}
               axisLine={false}
               tickLine={false}
               width={64}
@@ -135,7 +155,7 @@ export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
               type="monotone"
               dataKey="income"
               name="Entradas"
-              stroke="#22C55E"
+              stroke={chart.income}
               strokeWidth={2.5}
               fill="url(#incomeGrad)"
               activeDot={{ r: 5, strokeWidth: 0 }}
@@ -144,7 +164,7 @@ export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
               type="monotone"
               dataKey="expenses"
               name="Gastos"
-              stroke="#F43F5E"
+              stroke={chart.expense}
               strokeWidth={2}
               fill="url(#expenseGrad)"
               activeDot={{ r: 4, strokeWidth: 0 }}
@@ -177,7 +197,7 @@ export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
       </div>
 
       {data.length === 0 ? (
-        <p className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-white/10 px-3 py-12 text-center text-sm text-[var(--color-ink-muted)]">
+        <p className="flex flex-1 items-center justify-center rounded-xl border border-dashed border-[var(--dashed-border)] px-3 py-12 text-center text-sm text-[var(--color-ink-muted)]">
           Nenhum gasto categorizado
         </p>
       ) : (
@@ -195,10 +215,7 @@ export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
                   stroke="none"
                 >
                   {data.map((entry, i) => (
-                    <Cell
-                      key={entry.name}
-                      fill={categoryColor(i)}
-                    />
+                    <Cell key={entry.name} fill={categoryColor(i)} />
                   ))}
                 </Pie>
                 <Tooltip content={<ChartTooltip />} />

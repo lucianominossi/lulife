@@ -21,6 +21,7 @@ import {
 import { signOutAndInvalidate } from "@/app/actions/auth";
 import { IconBox } from "@/components/ui/icon-box";
 import { PrivacyProvider, usePrivacy } from "@/components/privacy-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const links = [
   { href: "/month", label: "Dashboard", match: "/month", icon: CalendarDays },
@@ -60,7 +61,7 @@ function PrivacyToggle({ compact }: { compact?: boolean }) {
       className={
         compact
           ? "btn-ghost flex h-10 w-10 items-center justify-center p-0"
-          : "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-white"
+          : "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--color-sidebar-ink)]"
       }
     >
       <Icon size={compact ? 22 : 16} />
@@ -91,8 +92,8 @@ function NavLinks({
                 onClick={onNavigate}
                 className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition ${
                   active
-                    ? "bg-[var(--accent-soft)] text-[#C4B5FD]"
-                    : "text-[var(--color-ink-muted)] hover:bg-white/5 hover:text-white"
+                    ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                    : "text-[var(--color-ink-muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
                 }`}
               >
                 <Icon size={15} />
@@ -118,16 +119,16 @@ function NavLinks({
               onClick={onNavigate}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 active
-                  ? "bg-[var(--accent-soft)] text-[#C4B5FD]"
-                  : "text-[var(--color-sidebar-muted)] hover:bg-white/5 hover:text-white"
+                  ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+                  : "text-[var(--color-sidebar-muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--color-sidebar-ink)]"
               }`}
             >
               <Icon
                 size={18}
                 className={
                   active
-                    ? "text-[#A78BFA]"
-                    : "text-[var(--color-sidebar-muted)] group-hover:text-white"
+                    ? "text-[var(--accent-ink)]"
+                    : "text-[var(--color-sidebar-muted)] group-hover:text-[var(--color-sidebar-ink)]"
                 }
               />
               {link.label}
@@ -155,16 +156,16 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
         href="/profile"
         className={`flex items-center gap-3 rounded-xl border px-3 py-3 transition ${
           active
-            ? "border-[#8B5CF6]/40 bg-[var(--accent-soft)]"
-            : "border-white/5 bg-white/[0.03] hover:border-white/10 hover:bg-white/[0.06]"
+            ? "border-[color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[var(--accent-soft)]"
+            : "border-[var(--border)] bg-[var(--hover-fill)] hover:border-[var(--panel-hover-border)] hover:bg-[var(--surface-2)]"
         }`}
         aria-current={active ? "page" : undefined}
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[#C4B5FD]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-xs font-semibold text-[var(--accent-ink)]">
           {initials}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-white">
+          <p className="truncate text-sm font-medium text-[var(--color-sidebar-ink)]">
             {name || "Conta"}
           </p>
           {email && (
@@ -181,7 +182,7 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
       <form action={signOutAndInvalidate}>
         <button
           type="submit"
-          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-[#F43F5E]"
+          className="flex w-full items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--color-danger)]"
         >
           <LogOut size={15} />
           Sair
@@ -193,18 +194,20 @@ function UserAvatar({ name, email }: { name?: string | null; email?: string }) {
 
 function UpgradeCard() {
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-white/5 bg-gradient-to-br from-[#8B5CF6]/20 via-[#3B82F6]/10 to-transparent p-4">
-      <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[#8B5CF6]/20 blur-2xl" />
+    <div className="relative overflow-hidden rounded-2xl border border-[var(--border)] bg-gradient-to-br from-[var(--accent-soft)] via-[var(--brand-soft)] to-transparent p-4">
+      <div className="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start gap-3">
         <IconBox icon={Sparkles} tone="savings" size="sm" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-white">Lulife Pro</p>
+          <p className="text-sm font-semibold text-[var(--color-sidebar-ink)]">
+            Lulife Pro
+          </p>
           <p className="mt-0.5 text-xs leading-relaxed text-[var(--color-sidebar-muted)]">
             Mais opções e vantagens.
           </p>
           <button
             type="button"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#C4B5FD] transition hover:text-white"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[var(--accent-ink)] transition hover:text-[var(--color-sidebar-ink)]"
           >
             Em breve
             <ChevronRight size={12} />
@@ -227,9 +230,9 @@ export function AppShell({
   return (
     <PrivacyProvider>
       <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
-        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-white/5 bg-[var(--color-sidebar)] px-4 py-6 text-[var(--color-sidebar-ink)] lg:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-[var(--border)] bg-[var(--color-sidebar)] px-4 py-6 text-[var(--color-sidebar-ink)] lg:flex">
           <Link href="/month" className="mb-8 flex items-center gap-3 px-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
               L
             </span>
             <div>
@@ -251,20 +254,22 @@ export function AppShell({
 
           <div className="mt-4 space-y-3">
             <UpgradeCard />
+            <ThemeToggle />
             <PrivacyToggle />
             <UserAvatar name={user?.name} email={user?.email ?? undefined} />
           </div>
         </aside>
 
-        <div className="sticky top-0 z-40 border-b border-white/5 bg-[var(--page-bg)]/80 backdrop-blur-xl lg:hidden">
+        <div className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--page-bg)]/80 backdrop-blur-xl lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <Link href="/month" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-bold text-[#C4B5FD]">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent-ink)]">
                 L
               </span>
               <span className="text-lg font-bold tracking-tight">Lulife</span>
             </Link>
             <div className="flex items-center gap-1">
+              <ThemeToggle compact />
               <PrivacyToggle compact />
               <button
                 type="button"
@@ -284,7 +289,7 @@ export function AppShell({
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="overflow-hidden border-t border-white/5 px-3 py-3"
+                className="overflow-hidden border-t border-[var(--border)] px-3 py-3"
               >
                 <NavLinks onNavigate={() => setMobileOpen(false)} compact />
                 <div className="mt-3 px-1">

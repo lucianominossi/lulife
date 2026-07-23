@@ -22,7 +22,7 @@ export function ProgressBar({
   };
 
   return (
-    <div className="h-2 overflow-hidden rounded-full bg-white/5">
+    <div className="h-2 overflow-hidden rounded-full bg-[var(--hover-fill)]">
       <div
         className={`progress-fill h-full rounded-full ${over ? colors.danger : colors[tone]}`}
         style={{ width: `${pct}%` }}

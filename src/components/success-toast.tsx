@@ -31,18 +31,18 @@ export function SuccessToast({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8, scale: 0.98 }}
           transition={{ duration: 0.2 }}
-          className="fixed bottom-6 right-6 z-[110] flex max-w-sm items-start gap-3 rounded-2xl border border-white/10 bg-[#141A23] px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+          className="fixed bottom-6 right-6 z-[110] flex max-w-sm items-start gap-3 rounded-2xl border border-[var(--tooltip-border)] bg-[var(--tooltip-bg)] px-4 py-3 shadow-[var(--shadow-card-hover)]"
           role="status"
         >
           <CheckCircle2
             size={18}
             className="mt-0.5 shrink-0 text-[var(--color-ok)]"
           />
-          <p className="flex-1 text-sm font-medium text-white">{message}</p>
+          <p className="flex-1 text-sm font-medium text-[var(--ink)]">{message}</p>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-[var(--color-ink-subtle)] transition hover:bg-white/5 hover:text-white"
+            className="rounded-lg p-1 text-[var(--color-ink-subtle)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
             aria-label="Fechar"
           >
             <X size={14} />

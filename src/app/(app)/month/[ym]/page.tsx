@@ -305,7 +305,7 @@ async function MonthDashboard({
           {recent.length === 0 ? (
             <Empty />
           ) : (
-            <ul className="divide-y divide-white/5">
+            <ul className="divide-y divide-[var(--border)]">
               {recent.map((item) => {
                 const style = getCategoryStyle(item.categoryName ?? item.description);
                 return (
@@ -409,7 +409,7 @@ async function MonthDashboard({
               {health.creditByAccount.map((a) => (
                 <li
                   key={a.accountId}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/5 bg-white/[0.02] px-3.5 py-3"
+                  className="flex items-center justify-between gap-3 rounded-xl border border-[var(--border)] bg-[var(--hover-fill)] px-3.5 py-3"
                 >
                   <span className="flex items-center gap-2.5 text-sm font-medium">
                     <IconBox icon={CreditCard} tone="expense" size="sm" />
@@ -418,7 +418,7 @@ async function MonthDashboard({
                   <Money value={a.total} tone="negative" />
                 </li>
               ))}
-              <li className="flex items-center justify-between border-t border-white/5 pt-3 text-sm">
+              <li className="flex items-center justify-between border-t border-[var(--border)] pt-3 text-sm">
                 <span className="text-[var(--color-ink-muted)]">Total cartões</span>
                 <Money value={health.totalCredit} className="font-semibold" />
               </li>
@@ -577,7 +577,7 @@ function Panel({
 }) {
   return (
     <section className={`panel overflow-hidden ${className}`}>
-      <div className="flex items-start justify-between gap-3 border-b border-white/5 px-6 py-5">
+      <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] px-6 py-5">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
             {title}
@@ -624,7 +624,7 @@ function DataTable({
           {rows.map((cols, i) => (
             <tr
               key={i}
-              className="border-t border-white/5 transition hover:bg-white/[0.02]"
+              className="border-t border-[var(--border)] transition hover:bg-[var(--hover-fill)]"
             >
               {cols.map((c, j) => (
                 <td key={j} className="px-3 py-3 align-middle">
@@ -641,7 +641,7 @@ function DataTable({
 
 function Empty({ text = "Nenhum item" }: { text?: string }) {
   return (
-    <p className="rounded-xl border border-dashed border-white/10 px-3 py-10 text-center text-sm text-[var(--color-ink-muted)]">
+    <p className="rounded-xl border border-dashed border-[var(--dashed-border)] px-3 py-10 text-center text-sm text-[var(--color-ink-muted)]">
       {text}
     </p>
   );

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export function AuthShell({
   title,
@@ -11,17 +12,19 @@ export function AuthShell({
 }) {
   return (
     <main className="relative grid min-h-dvh lg:grid-cols-2">
-      <section className="relative hidden overflow-hidden bg-[#0E131C] lg:flex lg:flex-col lg:justify-between lg:p-12">
-        <div className="absolute -right-20 top-20 h-72 w-72 rounded-full bg-[#8B5CF6]/25 blur-3xl" />
-        <div className="absolute -left-10 bottom-10 h-64 w-64 rounded-full bg-[#3B82F6]/20 blur-3xl" />
+      <section className="relative hidden overflow-hidden bg-[var(--sidebar)] lg:flex lg:flex-col lg:justify-between lg:p-12">
+        <div className="absolute -right-20 top-20 h-72 w-72 rounded-full bg-[var(--accent-soft)] blur-3xl" />
+        <div className="absolute -left-10 bottom-10 h-64 w-64 rounded-full bg-[var(--brand-soft)] blur-3xl" />
         <Link href="/login" className="relative flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
             L
           </span>
-          <p className="text-2xl font-bold tracking-tight text-white">Lulife</p>
+          <p className="text-2xl font-bold tracking-tight text-[var(--sidebar-ink)]">
+            Lulife
+          </p>
         </Link>
         <div className="relative max-w-md">
-          <h1 className="text-5xl font-bold leading-tight tracking-tight text-white">
+          <h1 className="text-5xl font-bold leading-tight tracking-tight text-[var(--sidebar-ink)]">
             Controle financeiro com clareza.
           </h1>
           <p className="mt-4 text-lg text-[var(--color-ink-muted)]">
@@ -30,14 +33,17 @@ export function AuthShell({
           </p>
         </div>
         <p className="relative text-sm text-[var(--color-sidebar-muted)]">
-          Finanças pessoais · dark mode
+          Finanças pessoais · cuidando do que importa
         </p>
       </section>
 
       <section className="relative flex items-center justify-center px-6 py-16">
+        <div className="absolute right-4 top-4 sm:right-6 sm:top-6">
+          <ThemeToggle compact />
+        </div>
         <div className="w-full max-w-md">
           <Link href="/login" className="mb-2 flex items-center gap-2 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
               L
             </span>
             <p className="text-2xl font-bold tracking-tight">Lulife</p>

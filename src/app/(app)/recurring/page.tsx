@@ -40,7 +40,7 @@ export default async function RecurringPage() {
         <RecurringRuleForm categories={cats} accounts={accs} />
 
         <div className="panel overflow-hidden">
-          <div className="border-b border-white/5 px-6 py-5">
+          <div className="border-b border-[var(--border)] px-6 py-5">
             <h2 className="text-lg font-semibold tracking-tight">
               Regras{" "}
               <span className="text-sm font-normal text-[var(--color-ink-subtle)]">
@@ -77,7 +77,7 @@ export default async function RecurringPage() {
                 {rules.map((r) => (
                   <tr
                     key={r.id}
-                    className="border-t border-white/5 hover:bg-white/[0.02]"
+                    className="border-t border-[var(--border)] hover:bg-[var(--hover-fill)]"
                   >
                     <td className="px-4 py-3 font-medium">
                       {r.description}
@@ -116,7 +116,7 @@ export default async function RecurringPage() {
                         >
                           <button
                             type="submit"
-                            className="text-xs font-medium text-[#C4B5FD] hover:text-white"
+                            className="text-xs font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
                           >
                             {r.active ? "Pausar" : "Ativar"}
                           </button>

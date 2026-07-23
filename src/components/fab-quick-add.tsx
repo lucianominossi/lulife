@@ -74,12 +74,12 @@ export function FabQuickAdd({
             <button
               type="button"
               tabIndex={-1}
-              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm"
               aria-label="Fechar"
               onClick={() => setOpen(false)}
             />
             <div className="panel relative z-10 flex max-h-[min(92dvh,720px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)] max-sm:max-h-[92dvh]">
-              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-5">
                 <h2
                   id="quick-add-title"
                   className="text-xl font-semibold tracking-tight"
@@ -89,7 +89,7 @@ export function FabQuickAdd({
                 <button
                   type="button"
                   onClick={() => setOpen(false)}
-                  className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition hover:bg-white/5 hover:text-white"
+                  className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
                 >
                   Fechar
                 </button>
@@ -104,8 +104,8 @@ export function FabQuickAdd({
                       onClick={() => setTab(t)}
                       className={`flex-1 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                         tab === t
-                          ? "bg-[var(--color-accent)] text-white"
-                          : "bg-white/5 text-[var(--color-ink-muted)] hover:bg-white/10"
+                          ? "bg-[var(--color-accent)] text-[var(--on-accent)]"
+                          : "bg-[var(--hover-fill)] text-[var(--color-ink-muted)] hover:bg-[var(--hover-fill)]"
                       }`}
                     >
                       {t === "expense" ? "Gasto" : "Entrada"}
@@ -293,7 +293,7 @@ export function FabQuickAdd({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-accent)] text-2xl text-white shadow-lg shadow-[#8B5CF6]/30 transition hover:bg-[var(--color-accent-hover)] lg:hidden"
+          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-accent)] text-2xl text-[var(--on-accent)] shadow-lg shadow-[var(--btn-primary-shadow)] transition hover:bg-[var(--color-accent-hover)] lg:hidden"
           aria-label="Adicionar"
         >
           +

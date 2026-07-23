@@ -122,14 +122,14 @@ function groupTransactionsByAccount(
 function methodChipClass(active: boolean) {
   return `rounded-xl px-3.5 py-2 text-sm font-medium transition ${
     active
-      ? "bg-[var(--accent-soft)] text-[#C4B5FD]"
-      : "border border-[var(--border-strong)] text-[var(--color-ink-muted)] hover:bg-white/5 hover:text-white"
+      ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
+      : "border border-[var(--border-strong)] text-[var(--color-ink-muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
   }`;
 }
 
 function accountChipClass(active: boolean) {
   return `inline-flex items-center rounded-xl px-3.5 py-2 text-sm font-medium transition border ${
-    active ? "" : "hover:bg-white/5"
+    active ? "" : "hover:bg-[var(--hover-fill)]"
   }`;
 }
 

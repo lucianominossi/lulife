@@ -30,7 +30,7 @@ export default function ForgotPasswordPage() {
         Lembrou a senha?{" "}
         <Link
           href="/login"
-          className="font-medium text-[#C4B5FD] hover:text-white"
+          className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
         >
           Entrar
         </Link>

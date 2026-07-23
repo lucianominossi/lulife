@@ -119,13 +119,13 @@ export function CategoryPicker({
             setCreating(true);
             setError(null);
           }}
-          className="inline-flex items-center gap-1 text-xs font-medium text-[#C4B5FD] transition hover:text-white"
+          className="inline-flex items-center gap-1 text-xs font-medium text-[var(--accent-ink)] transition hover:text-[var(--ink)]"
         >
           <Plus size={12} />
           Nova categoria
         </button>
       ) : (
-        <div className="space-y-2 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+        <div className="space-y-2 rounded-xl border border-[var(--dashed-border)] bg-[var(--hover-fill)] p-3">
           <input
             type="text"
             value={newName}

@@ -7,7 +7,7 @@ const TONE_STYLES = {
   savings: "bg-[#8B5CF6]/15 text-[#8B5CF6]",
   goals: "bg-[#FACC15]/15 text-[#FACC15]",
   transport: "bg-[#FB923C]/15 text-[#FB923C]",
-  muted: "bg-white/5 text-[#7A8596]",
+  muted: "bg-[var(--hover-fill)] text-[var(--ink-subtle)]",
 } as const;
 
 export type IconTone = keyof typeof TONE_STYLES;

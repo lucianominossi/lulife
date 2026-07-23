@@ -18,7 +18,7 @@ export function SubmitButton({
       {pending ? (
         <span className="inline-flex items-center justify-center gap-2">
           <span
-            className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"
+            className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--on-accent)]/30 border-t-[var(--on-accent)]"
             aria-hidden
           />
           {pendingLabel}

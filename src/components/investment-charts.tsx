@@ -13,6 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { formatBRL } from "@/lib/dates";
+import { useChartColors } from "@/components/use-chart-colors";
 
 const COLORS = [
   "#8B5CF6",
@@ -31,14 +32,21 @@ function ChartTooltip({
   label,
 }: {
   active?: boolean;
-  payload?: { name: string; value: number; color?: string; payload?: { fill?: string } }[];
+  payload?: {
+    name: string;
+    value: number;
+    color?: string;
+    payload?: { fill?: string };
+  }[];
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-xl border border-white/10 bg-[#0E131C]/95 px-3 py-2 shadow-xl backdrop-blur-md">
+    <div className="rounded-xl border border-[var(--tooltip-border)] bg-[var(--tooltip-bg)]/95 px-3 py-2 shadow-xl backdrop-blur-md">
       {label && (
-        <p className="mb-1.5 text-xs font-medium text-[#7A8596]">{label}</p>
+        <p className="mb-1.5 text-xs font-medium text-[var(--chart-tick)]">
+          {label}
+        </p>
       )}
       <ul className="space-y-1">
         {payload.map((p) => (
@@ -46,8 +54,8 @@ function ChartTooltip({
             key={p.name}
             className="flex items-center justify-between gap-4 text-sm"
           >
-            <span className="text-[#B4BDC9]">{p.name}</span>
-            <span className="tabular-nums font-medium text-white">
+            <span className="text-[var(--chart-label)]">{p.name}</span>
+            <span className="tabular-nums font-medium text-[var(--ink)]">
               {formatBRL(p.value)}
             </span>
           </li>
@@ -64,6 +72,8 @@ export function InvestmentCharts({
   byType: { name: string; value: number }[];
   byInstitution: { name: string; value: number }[];
 }) {
+  const chart = useChartColors();
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="panel p-6">
@@ -121,23 +131,28 @@ export function InvestmentCharts({
             <BarChart data={byInstitution} margin={{ left: 0, right: 8 }}>
               <CartesianGrid
                 strokeDasharray="3 3"
-                stroke="var(--chart-grid)"
+                stroke={chart.grid}
                 vertical={false}
               />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 12, fill: "#7A8596" }}
+                tick={{ fontSize: 12, fill: chart.tick }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fontSize: 12, fill: "#7A8596" }}
+                tick={{ fontSize: 12, fill: chart.tick }}
                 width={56}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="value" name="Valor" fill="#3B82F6" radius={[8, 8, 0, 0]} />
+              <Bar
+                dataKey="value"
+                name="Valor"
+                fill={chart.invest}
+                radius={[8, 8, 0, 0]}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>

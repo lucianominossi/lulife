@@ -354,17 +354,17 @@ function Modal({
       <button
         type="button"
         tabIndex={-1}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-[var(--overlay)] backdrop-blur-sm"
         aria-label="Fechar"
         onClick={onClose}
       />
       <div className="panel relative z-10 flex max-h-[min(92dvh,720px)] w-full max-w-xl flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/5 px-6 py-5">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-[var(--border)] px-6 py-5">
           <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition hover:bg-white/5 hover:text-white"
+            className="rounded-lg px-3 py-1.5 text-sm text-[var(--color-ink-muted)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
           >
             Fechar
           </button>

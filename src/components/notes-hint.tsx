@@ -36,7 +36,7 @@ export function NotesHint({ notes }: { notes?: string | null }) {
       <button
         ref={buttonRef}
         type="button"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-ink-subtle)] transition hover:bg-white/10 hover:text-[#C4B5FD]"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full text-[var(--color-ink-subtle)] transition hover:bg-[var(--hover-fill)] hover:text-[var(--accent-ink)]"
         aria-label="Ver observação"
         aria-describedby={position ? tooltipId : undefined}
         onMouseEnter={showTooltip}
@@ -51,17 +51,17 @@ export function NotesHint({ notes }: { notes?: string | null }) {
           <span
             id={tooltipId}
             role="tooltip"
-            className="pointer-events-none fixed z-[9999] w-max max-w-[min(240px,calc(100vw-24px))] -translate-x-1/2 -translate-y-full rounded-xl border border-white/10 bg-[#141A23] px-3 py-2 text-left text-xs leading-relaxed text-white shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+            className="pointer-events-none fixed z-[9999] w-max max-w-[min(240px,calc(100vw-24px))] -translate-x-1/2 -translate-y-full rounded-xl border border-[var(--tooltip-border)] bg-[var(--tooltip-bg)] px-3 py-2 text-left text-xs leading-relaxed text-[var(--ink)] shadow-[var(--shadow-card-hover)]"
             style={{ left: position.x, top: position.y }}
           >
             {trimmed}
             <span
               aria-hidden="true"
-              className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[8px] border-x-transparent border-t-white/10"
+              className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-[7px] border-t-[8px] border-x-transparent border-t-[var(--tooltip-border)]"
             />
             <span
               aria-hidden="true"
-              className="absolute left-1/2 top-[calc(100%-1px)] h-0 w-0 -translate-x-1/2 border-x-[6px] border-t-[7px] border-x-transparent border-t-[#141A23]"
+              className="absolute left-1/2 top-[calc(100%-1px)] h-0 w-0 -translate-x-1/2 border-x-[6px] border-t-[7px] border-x-transparent border-t-[var(--tooltip-bg)]"
             />
           </span>,
           document.body,

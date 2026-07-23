@@ -50,7 +50,7 @@ export default function PrivacyPage() {
           </p>
         </section>
         <p>
-          <Link href="/login" className="text-[#C4B5FD] hover:text-white">
+          <Link href="/login" className="text-[var(--accent-ink)] hover:text-[var(--ink)]">
             Voltar ao login
           </Link>
         </p>

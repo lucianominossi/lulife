@@ -68,7 +68,7 @@ export default async function ProfilePage() {
         <p className="text-sm text-[var(--color-ink-muted)]">
           Exporte um JSON com seus lançamentos ou exclua permanentemente a
           conta. Veja também a{" "}
-          <Link href="/privacy" className="text-[#C4B5FD] hover:underline">
+          <Link href="/privacy" className="text-[var(--accent-ink)] hover:underline">
             política de privacidade
           </Link>
           .

@@ -17,7 +17,7 @@ export default async function ResetPasswordPage() {
         <p className="mt-8 text-sm text-[var(--color-ink-muted)]">
           <Link
             href="/forgot-password"
-            className="font-medium text-[#C4B5FD] hover:text-white"
+            className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
           >
             Solicitar novo link
           </Link>
