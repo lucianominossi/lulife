@@ -14,7 +14,8 @@ import {
   EditTransactionButton,
 } from "@/components/edit-record";
 import { DateWithNotes, DescriptionWithNotes } from "@/components/notes-hint";
-import { Money, StatCard } from "@/components/money";
+import { Money } from "@/components/money";
+import { StatCard } from "@/components/stat-card";
 import {
   ExpenseDonutChart,
   MonthTrendChart,

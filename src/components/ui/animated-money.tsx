@@ -2,6 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatBRL } from "@/lib/dates";
+import {
+  HIDDEN_AMOUNT_LABEL,
+  usePrivacy,
+} from "@/components/privacy-provider";
 
 export function AnimatedMoney({
   value,
@@ -14,11 +18,13 @@ export function AnimatedMoney({
   className?: string;
   duration?: number;
 }) {
+  const { hidden } = usePrivacy();
   const [display, setDisplay] = useState(0);
   const fromRef = useRef(0);
   const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    if (hidden) return;
     const from = fromRef.current;
     const start = performance.now();
 
@@ -38,7 +44,7 @@ export function AnimatedMoney({
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
-  }, [value, duration]);
+  }, [value, duration, hidden]);
 
   const color =
     tone === "positive"
@@ -51,7 +57,7 @@ export function AnimatedMoney({
 
   return (
     <span className={`tabular-nums ${color} ${className}`}>
-      {formatBRL(display)}
+      {hidden ? HIDDEN_AMOUNT_LABEL : formatBRL(display)}
     </span>
   );
 }

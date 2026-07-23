@@ -15,6 +15,10 @@ import {
 } from "recharts";
 import { formatBRL } from "@/lib/dates";
 import { categoryColor } from "@/lib/category-style";
+import {
+  HIDDEN_AMOUNT_LABEL,
+  usePrivacy,
+} from "@/components/privacy-provider";
 
 type TrendPoint = {
   label: string;
@@ -37,6 +41,7 @@ function ChartTooltip({
   payload?: { name: string; value: number; color: string }[];
   label?: string;
 }) {
+  const { hidden } = usePrivacy();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-xl border border-white/10 bg-[#0E131C]/95 px-3 py-2 shadow-xl backdrop-blur-md">
@@ -57,7 +62,7 @@ function ChartTooltip({
               {p.name}
             </span>
             <span className="tabular-nums font-medium text-white">
-              {formatBRL(p.value)}
+              {hidden ? HIDDEN_AMOUNT_LABEL : formatBRL(p.value)}
             </span>
           </li>
         ))}
@@ -67,6 +72,7 @@ function ChartTooltip({
 }
 
 export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
+  const { hidden } = usePrivacy();
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -117,7 +123,11 @@ export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
               tickLine={false}
               width={64}
               tickFormatter={(v: number) =>
-                v >= 1000 ? `${Math.round(v / 1000)}k` : String(v)
+                hidden
+                  ? "••••"
+                  : v >= 1000
+                    ? `${Math.round(v / 1000)}k`
+                    : String(v)
               }
             />
             <Tooltip content={<ChartTooltip />} />
@@ -147,6 +157,7 @@ export function MonthTrendChart({ data }: { data: TrendPoint[] }) {
 }
 
 export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
+  const { hidden } = usePrivacy();
   const total = data.reduce((s, d) => s + d.value, 0);
 
   return (
@@ -198,7 +209,7 @@ export function ExpenseDonutChart({ data }: { data: CategorySlice[] }) {
                 Total
               </p>
               <p className="text-sm font-semibold tabular-nums">
-                {formatBRL(total)}
+                {hidden ? HIDDEN_AMOUNT_LABEL : formatBRL(total)}
               </p>
             </div>
           </div>

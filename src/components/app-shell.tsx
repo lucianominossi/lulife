@@ -15,9 +15,12 @@ import {
   Sparkles,
   ChevronRight,
   LogOut,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { signOutAndInvalidate } from "@/app/actions/auth";
 import { IconBox } from "@/components/ui/icon-box";
+import { PrivacyProvider, usePrivacy } from "@/components/privacy-provider";
 
 const links = [
   { href: "/month", label: "Dashboard", match: "/month", icon: CalendarDays },
@@ -42,6 +45,29 @@ const links = [
   { href: "/settings", label: "Cadastros", match: "/settings", icon: Settings },
 ];
 
+function PrivacyToggle({ compact }: { compact?: boolean }) {
+  const { hidden, toggle } = usePrivacy();
+  const Icon = hidden ? EyeOff : Eye;
+  const label = hidden ? "Mostrar valores" : "Ocultar valores";
+
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      aria-pressed={hidden}
+      aria-label={label}
+      title={label}
+      className={
+        compact
+          ? "btn-ghost flex h-10 w-10 items-center justify-center p-0"
+          : "flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--color-sidebar-muted)] transition hover:bg-white/5 hover:text-white"
+      }
+    >
+      <Icon size={compact ? 22 : 16} />
+      {!compact && <span>{label}</span>}
+    </button>
+  );
+}
 function NavLinks({
   onNavigate,
   compact,
@@ -199,79 +225,85 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-white/5 bg-[var(--color-sidebar)] px-4 py-6 text-[var(--color-sidebar-ink)] lg:flex">
-        <Link href="/month" className="mb-8 flex items-center gap-3 px-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
-            L
-          </span>
-          <div>
-            <span className="block text-lg font-bold tracking-tight">
-              Lulife
-            </span>
-            <span className="block text-[11px] text-[var(--color-sidebar-muted)]">
-              Finanças pessoais
-            </span>
-          </div>
-        </Link>
-
-        <nav className="flex-1 overflow-y-auto">
-          <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-sidebar-muted)]">
-            Menu
-          </p>
-          <NavLinks />
-        </nav>
-
-        <div className="mt-4 space-y-3">
-          <UpgradeCard />
-          <UserAvatar name={user?.name} email={user?.email ?? undefined} />
-        </div>
-      </aside>
-
-      <div className="sticky top-0 z-40 border-b border-white/5 bg-[var(--page-bg)]/80 backdrop-blur-xl lg:hidden">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
-          <Link href="/month" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-bold text-[#C4B5FD]">
+    <PrivacyProvider>
+      <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
+        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-white/5 bg-[var(--color-sidebar)] px-4 py-6 text-[var(--color-sidebar-ink)] lg:flex">
+          <Link href="/month" className="mb-8 flex items-center gap-3 px-2">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[#C4B5FD]">
               L
             </span>
-            <span className="text-lg font-bold tracking-tight">Lulife</span>
+            <div>
+              <span className="block text-lg font-bold tracking-tight">
+                Lulife
+              </span>
+              <span className="block text-[11px] text-[var(--color-sidebar-muted)]">
+                Finanças pessoais
+              </span>
+            </div>
           </Link>
-          <button
-            type="button"
-            onClick={() => setMobileOpen((v) => !v)}
-            className="btn-ghost flex h-10 w-10 items-center justify-center p-0"
-            aria-expanded={mobileOpen}
-            aria-label="Menu"
-          >
-            {mobileOpen ? <X size={18} /> : <Menu size={18} />}
-          </button>
-        </div>
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.nav
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="overflow-hidden border-t border-white/5 px-3 py-3"
-            >
-              <NavLinks onNavigate={() => setMobileOpen(false)} compact />
-              <div className="mt-3 px-1">
-                <UserAvatar
-                  name={user?.name}
-                  email={user?.email ?? undefined}
-                />
-              </div>
-            </motion.nav>
-          )}
-        </AnimatePresence>
-      </div>
 
-      <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="animate-fade-in mx-auto w-full max-w-[1280px]">
-          {children}
+          <nav className="flex-1 overflow-y-auto">
+            <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.14em] text-[var(--color-sidebar-muted)]">
+              Menu
+            </p>
+            <NavLinks />
+          </nav>
+
+          <div className="mt-4 space-y-3">
+            <UpgradeCard />
+            <PrivacyToggle />
+            <UserAvatar name={user?.name} email={user?.email ?? undefined} />
+          </div>
+        </aside>
+
+        <div className="sticky top-0 z-40 border-b border-white/5 bg-[var(--page-bg)]/80 backdrop-blur-xl lg:hidden">
+          <div className="flex items-center justify-between gap-3 px-4 py-3">
+            <Link href="/month" className="flex items-center gap-2">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-bold text-[#C4B5FD]">
+                L
+              </span>
+              <span className="text-lg font-bold tracking-tight">Lulife</span>
+            </Link>
+            <div className="flex items-center gap-1">
+              <PrivacyToggle compact />
+              <button
+                type="button"
+                onClick={() => setMobileOpen((v) => !v)}
+                className="btn-ghost flex h-10 w-10 items-center justify-center p-0"
+                aria-expanded={mobileOpen}
+                aria-label="Menu"
+              >
+                {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+              </button>
+            </div>
+          </div>
+          <AnimatePresence>
+            {mobileOpen && (
+              <motion.nav
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden border-t border-white/5 px-3 py-3"
+              >
+                <NavLinks onNavigate={() => setMobileOpen(false)} compact />
+                <div className="mt-3 px-1">
+                  <UserAvatar
+                    name={user?.name}
+                    email={user?.email ?? undefined}
+                  />
+                </div>
+              </motion.nav>
+            )}
+          </AnimatePresence>
         </div>
-      </main>
-    </div>
+
+        <main className="min-w-0 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <div className="animate-fade-in mx-auto w-full max-w-[1280px]">
+            {children}
+          </div>
+        </main>
+      </div>
+    </PrivacyProvider>
   );
 }

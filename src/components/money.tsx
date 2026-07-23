@@ -1,4 +1,10 @@
+"use client";
+
 import { formatBRL } from "@/lib/dates";
+import {
+  HIDDEN_AMOUNT_LABEL,
+  usePrivacy,
+} from "@/components/privacy-provider";
 
 export function Money({
   value,
@@ -9,6 +15,7 @@ export function Money({
   tone?: "default" | "positive" | "negative" | "muted";
   className?: string;
 }) {
+  const { hidden } = usePrivacy();
   const color =
     tone === "positive"
       ? "text-[var(--color-ok)]"
@@ -19,9 +26,7 @@ export function Money({
           : "";
   return (
     <span className={`tabular-nums ${color} ${className}`}>
-      {formatBRL(value)}
+      {hidden ? HIDDEN_AMOUNT_LABEL : formatBRL(value)}
     </span>
   );
 }
-
-export { StatCard } from "@/components/stat-card";
