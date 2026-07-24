@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { authCookieOptions } from "@/lib/supabase/cookie-options";
 
 const publicPaths = [
   "/login",
@@ -8,16 +9,20 @@ const publicPaths = [
   "/reset-password",
   "/privacy",
   "/auth",
-  "/api/cron",
 ];
+
+/** Exact API paths that skip session gate (each handler still enforces its own auth). */
+const publicExactPaths = ["/api/cron/recurring"];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const cookieDefaults = authCookieOptions();
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: cookieDefaults,
       cookies: {
         getAll() {
           return request.cookies.getAll();
@@ -28,7 +33,10 @@ export async function updateSession(request: NextRequest) {
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
+            supabaseResponse.cookies.set(name, value, {
+              ...cookieDefaults,
+              ...options,
+            }),
           );
         },
       },
@@ -39,7 +47,9 @@ export async function updateSession(request: NextRequest) {
   const user = data.user;
   const { pathname } = request.nextUrl;
 
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p));
+  const isPublic =
+    publicExactPaths.includes(pathname) ||
+    publicPaths.some((p) => pathname.startsWith(p));
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

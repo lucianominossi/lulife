@@ -121,9 +121,10 @@ export function ProfilePasswordForm() {
           name="password"
           type="password"
           required
-          minLength={8}
+          minLength={10}
           autoComplete="new-password"
           className="input-field"
+          placeholder="Mínimo 10 caracteres, com letra e número"
         />
       </label>
       <label className="block space-y-1.5">
@@ -134,7 +135,7 @@ export function ProfilePasswordForm() {
           name="confirmPassword"
           type="password"
           required
-          minLength={8}
+          minLength={10}
           autoComplete="new-password"
           className="input-field"
         />

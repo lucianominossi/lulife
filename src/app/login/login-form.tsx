@@ -1,152 +1,81 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useSearchParams } from "next/navigation";
+import { loginAction } from "@/app/actions/auth";
+import { AuthForm } from "@/components/auth-form";
 import { safeCallbackUrl } from "@/lib/safe-callback-url";
 
 export function LoginForm() {
-  const router = useRouter();
   const search = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setUnverifiedEmail(null);
-    const fd = new FormData(e.currentTarget);
-    const email = String(fd.get("email")).trim().toLowerCase();
-    const password = String(fd.get("password"));
-
-    try {
-      const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        setLoading(false);
-        const msg = (signInError.message || "").toLowerCase();
-        if (
-          msg.includes("email not confirmed") ||
-          msg.includes("not confirmed")
-        ) {
-          setUnverifiedEmail(email);
-          setError(
-            "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
-          );
-          return;
-        }
-        setError("Email ou senha inválidos.");
-        return;
-      }
-
-      router.replace(safeCallbackUrl(search.get("callbackUrl")));
-      router.refresh();
-    } catch {
-      setLoading(false);
-      setError("Não foi possível entrar. Tente novamente.");
-    }
-  }
+  const callbackUrl = safeCallbackUrl(search.get("callbackUrl"));
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 space-y-4">
+    <>
       {search.get("reset") === "1" && (
-        <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
+        <p className="mt-8 rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
           Senha atualizada. Entre com a nova senha.
         </p>
       )}
       {search.get("password") === "1" && (
-        <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
+        <p className="mt-8 rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
           Senha alterada. Entre com a nova senha.
         </p>
       )}
       {search.get("verified") === "1" && (
-        <p className="rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
+        <p className="mt-8 rounded-xl border border-[#22C55E]/20 bg-[#22C55E]/10 px-3 py-2 text-sm text-[#22C55E]">
           Email confirmado. Você já pode entrar.
         </p>
       )}
-      {search.get("error") === "auth" && !error && (
-        <p className="text-sm text-[var(--color-danger)]" role="alert">
+      {search.get("error") === "auth" && (
+        <p className="mt-8 text-sm text-[var(--color-danger)]" role="alert">
           Não foi possível confirmar o link. Tente novamente.
         </p>
       )}
-      <label className="block space-y-1.5">
-        <span className="text-sm text-[var(--color-ink-muted)]">Email</span>
-        <input
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          disabled={loading}
-          className="input-field py-3"
-          placeholder="voce@email.com"
-        />
-      </label>
-      <label className="block space-y-1.5">
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm text-[var(--color-ink-muted)]">Senha</span>
-          <Link
-            href="/forgot-password"
-            className="text-xs font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
-          >
-            Esqueceu a senha?
-          </Link>
-        </div>
-        <input
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          disabled={loading}
-          className="input-field py-3"
-        />
-      </label>
-      {error && (
-        <p className="text-sm text-[var(--color-danger)]" role="alert">
-          {error}
-        </p>
-      )}
-      {unverifiedEmail && (
-        <p className="text-sm text-[var(--color-ink-muted)]">
-          Não recebeu o email?{" "}
-          <Link
-            href={`/register/check-email?email=${encodeURIComponent(unverifiedEmail)}`}
-            className="font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
-          >
-            Reenviar confirmação
-          </Link>
-        </p>
-      )}
-      {search.get("error") === "session" && !error && (
-        <p className="text-sm text-[var(--color-ink-muted)]" role="status">
+      {search.get("error") === "session" && (
+        <p className="mt-8 text-sm text-[var(--color-ink-muted)]" role="status">
           Sessão encerrada. Entre novamente com sua senha.
         </p>
       )}
-      <button
-        type="submit"
-        disabled={loading}
-        aria-busy={loading}
-        className="btn-primary w-full py-3.5"
+
+      <AuthForm
+        action={loginAction}
+        submitLabel="Entrar"
+        pendingLabel="Entrando…"
       >
-        {loading ? (
-          <span className="inline-flex items-center justify-center gap-2">
-            <span
-              className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--on-accent)]/30 border-t-[var(--on-accent)]"
-              aria-hidden
-            />
-            Entrando…
-          </span>
-        ) : (
-          "Entrar"
-        )}
-      </button>
-      <p className="text-center text-sm text-[var(--color-ink-muted)]">
+        <input type="hidden" name="callbackUrl" value={callbackUrl} />
+        <label className="block space-y-1.5">
+          <span className="text-sm text-[var(--color-ink-muted)]">Email</span>
+          <input
+            name="email"
+            type="email"
+            required
+            autoComplete="email"
+            className="input-field py-3"
+            placeholder="voce@email.com"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-[var(--color-ink-muted)]">Senha</span>
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-[var(--accent-ink)] hover:text-[var(--ink)]"
+            >
+              Esqueceu a senha?
+            </Link>
+          </div>
+          <input
+            name="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            className="input-field py-3"
+          />
+        </label>
+      </AuthForm>
+
+      <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">
         Não tem conta?{" "}
         <Link
           href="/register"
@@ -155,6 +84,6 @@ export function LoginForm() {
           Criar conta
         </Link>
       </p>
-    </form>
+    </>
   );
 }

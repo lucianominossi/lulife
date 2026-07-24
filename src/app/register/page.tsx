@@ -2,6 +2,7 @@ import Link from "next/link";
 import { registerAction } from "@/app/actions/auth";
 import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/auth-shell";
+import { PASSWORD_HINT } from "@/lib/password";
 
 export default function RegisterPage() {
   return (
@@ -43,11 +44,14 @@ export default function RegisterPage() {
             name="password"
             type="password"
             required
-            minLength={8}
+            minLength={10}
             autoComplete="new-password"
             className="input-field py-3"
-            placeholder="Mínimo 8 caracteres"
+            placeholder={PASSWORD_HINT}
           />
+          <span className="block text-xs text-[var(--color-ink-subtle)]">
+            {PASSWORD_HINT}
+          </span>
         </label>
       </AuthForm>
       <p className="mt-4 text-center text-sm text-[var(--color-ink-muted)]">

@@ -1,9 +1,9 @@
-import { eq, lt, sql } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { rateLimits } from "@/db/schema";
 
 /**
- * Simple Postgres-backed rate limit (Neon Free / PGlite).
+ * Atomic Postgres-backed rate limit (Neon / PGlite).
  * Returns true if the request is allowed.
  */
 export async function rateLimit(
@@ -14,53 +14,60 @@ export async function rateLimit(
   const db = await getDb();
   const now = new Date();
   const windowMs = windowSec * 1000;
+  const windowExpiredAt = new Date(now.getTime() - windowMs);
 
-  // Opportunistic cleanup of expired windows
+  // Opportunistic cleanup of expired windows (best-effort).
   await db
     .delete(rateLimits)
     .where(lt(rateLimits.windowStart, new Date(now.getTime() - windowMs * 2)));
 
-  const [row] = await db
-    .select()
-    .from(rateLimits)
-    .where(eq(rateLimits.key, key))
-    .limit(1);
-
-  if (!row) {
-    await db.insert(rateLimits).values({
+  const rows = await db
+    .insert(rateLimits)
+    .values({
       key,
       count: 1,
       windowStart: now,
-    });
-    return true;
-  }
+    })
+    .onConflictDoUpdate({
+      target: rateLimits.key,
+      set: {
+        count: sql`CASE
+          WHEN ${rateLimits.windowStart} <= ${windowExpiredAt} THEN 1
+          WHEN ${rateLimits.count} >= ${limit} THEN ${rateLimits.count}
+          ELSE ${rateLimits.count} + 1
+        END`,
+        windowStart: sql`CASE
+          WHEN ${rateLimits.windowStart} <= ${windowExpiredAt} THEN ${now}
+          ELSE ${rateLimits.windowStart}
+        END`,
+      },
+    })
+    .returning();
 
-  const elapsed = now.getTime() - row.windowStart.getTime();
-  if (elapsed >= windowMs) {
-    await db
-      .update(rateLimits)
-      .set({ count: 1, windowStart: now })
-      .where(eq(rateLimits.key, key));
-    return true;
-  }
-
-  if (row.count >= limit) {
-    return false;
-  }
-
-  await db
-    .update(rateLimits)
-    .set({ count: sql`${rateLimits.count} + 1` })
-    .where(eq(rateLimits.key, key));
-  return true;
+  const row = rows[0];
+  if (!row) return true;
+  if (row.windowStart.getTime() <= windowExpiredAt.getTime()) return true;
+  return row.count <= limit;
 }
 
+/**
+ * Prefer platform-set client IP over spoofable X-Forwarded-For prefixes.
+ * On Vercel, `x-real-ip` / `x-vercel-forwarded-for` are authoritative.
+ */
 export async function clientIpFromHeaders(
   headersList: Headers,
 ): Promise<string> {
+  const vercel =
+    headersList.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+    headersList.get("x-real-ip")?.trim();
+  if (vercel) return vercel;
+
   const forwarded = headersList.get("x-forwarded-for");
   if (forwarded) {
-    return forwarded.split(",")[0]?.trim() || "unknown";
+    // Rightmost hop is typically added by the trusted edge; leftmost can be spoofed.
+    const parts = forwarded.split(",").map((p) => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1]!;
   }
-  return headersList.get("x-real-ip")?.trim() || "unknown";
+
+  return "unknown";
 }

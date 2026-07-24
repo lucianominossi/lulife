@@ -3,13 +3,7 @@ import { resendVerificationAction } from "@/app/actions/auth";
 import { AuthForm } from "@/components/auth-form";
 import { AuthShell } from "@/components/auth-shell";
 
-export default async function CheckEmailPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ email?: string }>;
-}) {
-  const { email } = await searchParams;
-
+export default function CheckEmailPage() {
   return (
     <AuthShell
       title="Confirme seu email"
@@ -17,18 +11,8 @@ export default async function CheckEmailPage({
     >
       <div className="mt-8 space-y-4">
         <p className="rounded-xl border border-[var(--dashed-border)] bg-[var(--hover-fill)] px-4 py-3 text-sm text-[var(--color-ink-muted)]">
-          {email ? (
-            <>
-              Verifique a caixa de entrada de{" "}
-              <strong className="text-[var(--ink)]">{email}</strong> (e o spam). O email
-              é enviado pelo Supabase Auth.
-            </>
-          ) : (
-            <>
-              Verifique sua caixa de entrada (e o spam). O email é enviado pelo
-              Supabase Auth.
-            </>
-          )}
+          Verifique sua caixa de entrada (e o spam). O email é enviado pelo
+          Supabase Auth.
         </p>
 
         <AuthForm
@@ -36,20 +20,17 @@ export default async function CheckEmailPage({
           submitLabel="Reenviar email"
           pendingLabel="Enviando…"
         >
-          {email ? (
-            <input type="hidden" name="email" value={email} />
-          ) : (
-            <label className="block space-y-1.5">
-              <span className="text-sm text-[var(--color-ink-muted)]">Email</span>
-              <input
-                name="email"
-                type="email"
-                required
-                className="input-field py-3"
-                placeholder="voce@email.com"
-              />
-            </label>
-          )}
+          <label className="block space-y-1.5">
+            <span className="text-sm text-[var(--color-ink-muted)]">Email</span>
+            <input
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              className="input-field py-3"
+              placeholder="voce@email.com"
+            />
+          </label>
         </AuthForm>
 
         <p className="text-center text-sm text-[var(--color-ink-muted)]">

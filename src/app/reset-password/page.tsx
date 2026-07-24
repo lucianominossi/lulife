@@ -29,7 +29,7 @@ export default async function ResetPasswordPage() {
   return (
     <AuthShell
       title="Nova senha"
-      subtitle="Escolha uma senha forte com pelo menos 8 caracteres."
+      subtitle="Escolha uma senha forte com letra e número."
     >
       <AuthForm
         action={resetPasswordAction}
@@ -44,10 +44,10 @@ export default async function ResetPasswordPage() {
             name="password"
             type="password"
             required
-            minLength={8}
+            minLength={10}
             autoComplete="new-password"
             className="input-field py-3"
-            placeholder="Mínimo 8 caracteres"
+            placeholder="Mínimo 10 caracteres, com letra e número"
           />
         </label>
       </AuthForm>

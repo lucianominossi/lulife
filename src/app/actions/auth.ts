@@ -8,7 +8,9 @@ import { z } from "zod";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { appUrl } from "@/lib/app-url";
+import { passwordSchema } from "@/lib/password";
 import { clientIpFromHeaders, rateLimit } from "@/lib/rate-limit";
+import { safeCallbackUrl } from "@/lib/safe-callback-url";
 import { requireUser } from "@/lib/session";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -17,13 +19,16 @@ import { ensureLocalUser } from "@/lib/supabase/user";
 const registerSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(80),
   email: z.string().trim().email("Email inválido.").max(160),
-  password: z
-    .string()
-    .min(8, "A senha deve ter pelo menos 8 caracteres.")
-    .max(100),
+  password: passwordSchema,
 });
 
 const emailSchema = z.string().trim().email("Email inválido.").max(160);
+
+const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, "Informe a senha."),
+  callbackUrl: z.string().optional(),
+});
 
 export type AuthActionState = {
   ok?: boolean;
@@ -56,6 +61,52 @@ function authErrorMessage(error: { message?: string; code?: string } | null) {
     return "Email ou senha inválidos.";
   }
   return error?.message || "Não foi possível concluir. Tente novamente.";
+}
+
+export async function loginAction(
+  _prev: AuthActionState,
+  formData: FormData,
+): Promise<AuthActionState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+    callbackUrl: formData.get("callbackUrl") || undefined,
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Dados inválidos." };
+  }
+
+  const email = parsed.data.email.toLowerCase();
+  const ip = await clientIp();
+  if (!(await rateLimit(`login:${ip}:${email}`, 10, 15 * 60))) {
+    return { error: RATE_LIMITED };
+  }
+  if (!(await rateLimit(`login-ip:${ip}`, 30, 15 * 60))) {
+    return { error: RATE_LIMITED };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: parsed.data.password,
+  });
+
+  if (error) {
+    const msg = (error.message || "").toLowerCase();
+    if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+      return {
+        error:
+          "Confirme seu email antes de entrar. Verifique sua caixa de entrada.",
+      };
+    }
+    return { error: "Email ou senha inválidos." };
+  }
+
+  if (data.user) {
+    await ensureLocalUser(data.user);
+  }
+
+  redirect(safeCallbackUrl(parsed.data.callbackUrl));
 }
 
 export async function registerAction(
@@ -98,7 +149,7 @@ export async function registerAction(
     redirect("/month");
   }
 
-  redirect(`/register/check-email?email=${encodeURIComponent(email)}`);
+  redirect(`/register/check-email`);
 }
 
 export async function resendVerificationAction(
@@ -171,10 +222,7 @@ export async function resetPasswordAction(
 ): Promise<AuthActionState> {
   const parsed = z
     .object({
-      password: z
-        .string()
-        .min(8, "A senha deve ter pelo menos 8 caracteres.")
-        .max(100),
+      password: passwordSchema,
     })
     .safeParse({ password: formData.get("password") });
   if (!parsed.success) {
@@ -213,15 +261,21 @@ export async function deleteMyAccount(formData: FormData) {
     throw new Error("Confirmação obrigatória para excluir a conta.");
   }
   const sessionUser = await requireUser();
-  const db = await getDb();
-  await db.delete(users).where(eq(users.id, sessionUser.id));
 
+  // Delete Auth first so a partial failure never leaves a live login without data.
   try {
     const admin = createAdminClient();
-    await admin.auth.admin.deleteUser(sessionUser.id);
+    const { error } = await admin.auth.admin.deleteUser(sessionUser.id);
+    if (error) throw error;
   } catch (err) {
     console.error("[deleteMyAccount] Supabase delete failed:", err);
+    throw new Error(
+      "Não foi possível excluir a conta no provedor de autenticação. Tente novamente.",
+    );
   }
+
+  const db = await getDb();
+  await db.delete(users).where(eq(users.id, sessionUser.id));
 
   const supabase = await createClient();
   await supabase.auth.signOut();
@@ -322,10 +376,7 @@ export async function updateProfilePasswordAction(
   const parsed = z
     .object({
       currentPassword: z.string().min(1, "Informe a senha atual."),
-      password: z
-        .string()
-        .min(8, "A nova senha deve ter pelo menos 8 caracteres.")
-        .max(100),
+      password: passwordSchema,
       confirmPassword: z.string().min(1, "Confirme a nova senha."),
     })
     .safeParse({
