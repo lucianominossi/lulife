@@ -16,7 +16,7 @@ import { formatBRL } from "@/lib/dates";
 import { useChartColors } from "@/components/use-chart-colors";
 
 const COLORS = [
-  "#8B5CF6",
+  "#6C5CFF",
   "#3B82F6",
   "#22C55E",
   "#F43F5E",

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandMark } from "@/components/brand-mark";
 
 export function AuthShell({
   title,
@@ -14,13 +15,8 @@ export function AuthShell({
       <section className="relative hidden overflow-hidden bg-[var(--sidebar)] lg:flex lg:flex-col lg:justify-between lg:p-12">
         <div className="absolute -right-20 top-20 h-72 w-72 rounded-full bg-[var(--accent-soft)] blur-3xl" />
         <div className="absolute -left-10 bottom-10 h-64 w-64 rounded-full bg-[var(--brand-soft)] blur-3xl" />
-        <Link href="/login" className="relative flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
-            L
-          </span>
-          <p className="text-2xl font-bold tracking-tight text-[var(--sidebar-ink)]">
-            Lulife
-          </p>
+        <Link href="/login" className="relative">
+          <BrandMark withWordmark size="lg" />
         </Link>
         <div className="relative max-w-md">
           <h1 className="text-5xl font-bold leading-tight tracking-tight text-[var(--sidebar-ink)]">
@@ -38,11 +34,8 @@ export function AuthShell({
 
       <section className="relative flex items-center justify-center px-6 py-16">
         <div className="w-full max-w-md">
-          <Link href="/login" className="mb-2 flex items-center gap-2 lg:hidden">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
-              L
-            </span>
-            <p className="text-2xl font-bold tracking-tight">Lulife</p>
+          <Link href="/login" className="mb-2 lg:hidden">
+            <BrandMark withWordmark size="md" />
           </Link>
           <h2 className="mt-4 text-[32px] font-bold tracking-tight lg:mt-0">
             {title}

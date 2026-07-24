@@ -1,3 +1,5 @@
+import { BrandMark } from "@/components/brand-mark";
+
 export default function AppLoading() {
   return (
     <div
@@ -5,9 +7,7 @@ export default function AppLoading() {
       role="status"
       aria-label="Carregando"
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-soft)] text-lg font-bold text-[var(--accent-ink)]">
-        L
-      </span>
+      <BrandMark size="lg" />
       <span
         className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-strong)] border-t-[var(--accent)]"
         aria-hidden

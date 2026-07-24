@@ -4,7 +4,7 @@ const TONE_STYLES = {
   income: "bg-[#22C55E]/15 text-[#22C55E]",
   expense: "bg-[#F43F5E]/15 text-[#F43F5E]",
   invest: "bg-[#3B82F6]/15 text-[#3B82F6]",
-  savings: "bg-[#8B5CF6]/15 text-[#8B5CF6]",
+  savings: "bg-[#6C5CFF]/15 text-[#6C5CFF]",
   goals: "bg-[#FACC15]/15 text-[#FACC15]",
   transport: "bg-[#FB923C]/15 text-[#FB923C]",
   muted: "bg-[var(--hover-fill)] text-[var(--ink-subtle)]",

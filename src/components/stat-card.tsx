@@ -7,6 +7,7 @@ import {
 import { Money } from "@/components/money";
 import { AnimatedMoney } from "@/components/ui/animated-money";
 import { IconBox, type IconTone } from "@/components/ui/icon-box";
+import { Sparkline } from "@/components/ui/sparkline";
 
 export function StatCard({
   label,
@@ -17,6 +18,9 @@ export function StatCard({
   iconTone = "muted",
   changePct,
   animate = true,
+  sparkline,
+  sparklineColor,
+  featured = false,
   className = "",
 }: {
   label: string;
@@ -27,6 +31,9 @@ export function StatCard({
   iconTone?: IconTone;
   changePct?: number | null;
   animate?: boolean;
+  sparkline?: number[];
+  sparklineColor?: string;
+  featured?: boolean;
   className?: string;
 }) {
   const changeTone =
@@ -45,9 +52,21 @@ export function StatCard({
         ? TrendingDown
         : Minus;
 
+  const sparkColor =
+    sparklineColor ??
+    (tone === "positive"
+      ? "var(--ok)"
+      : tone === "negative"
+        ? "var(--danger)"
+        : "var(--accent)");
+
   return (
     <div
-      className={`panel panel-hover flex flex-col gap-4 p-6 ${className}`}
+      className={`panel panel-hover flex flex-col gap-4 p-6 ${
+        featured
+          ? "border-[color-mix(in_srgb,var(--accent)_28%,transparent)] bg-gradient-to-br from-[var(--accent-soft)] via-[var(--surface)] to-[var(--brand-soft)] shadow-[var(--shadow-card)]"
+          : ""
+      } ${className}`}
     >
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-[var(--color-ink-muted)]">
@@ -64,24 +83,29 @@ export function StatCard({
         )}
       </p>
 
-      <div className="mt-auto flex items-center justify-between gap-2">
-        {hint && (
-          <p className="text-xs text-[var(--color-ink-subtle)]">{hint}</p>
-        )}
-        {changePct != null && (
-          <span
-            className={`inline-flex items-center gap-1 text-xs font-medium ${
-              changeTone === "positive"
-                ? "text-[var(--color-ok)]"
-                : changeTone === "negative"
-                  ? "text-[var(--color-danger)]"
-                  : "text-[var(--color-ink-subtle)]"
-            }`}
-          >
-            <ChangeIcon size={12} />
-            {changePct > 0 ? "+" : ""}
-            {changePct.toFixed(1)}%
-          </span>
+      <div className="mt-auto flex items-end justify-between gap-2">
+        <div className="min-w-0">
+          {hint && (
+            <p className="text-xs text-[var(--color-ink-subtle)]">{hint}</p>
+          )}
+          {changePct != null && (
+            <span
+              className={`mt-1 inline-flex items-center gap-1 text-xs font-medium ${
+                changeTone === "positive"
+                  ? "text-[var(--color-ok)]"
+                  : changeTone === "negative"
+                    ? "text-[var(--color-danger)]"
+                    : "text-[var(--color-ink-subtle)]"
+              }`}
+            >
+              <ChangeIcon size={12} />
+              {changePct > 0 ? "+" : ""}
+              {changePct.toFixed(1)}%
+            </span>
+          )}
+        </div>
+        {sparkline && sparkline.length > 0 && (
+          <Sparkline data={sparkline} color={sparkColor} />
         )}
       </div>
     </div>

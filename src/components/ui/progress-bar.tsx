@@ -16,7 +16,7 @@ export function ProgressBar({
     brand: "bg-[#3B82F6]",
     danger: "bg-[#F43F5E]",
     ok: "bg-[#22C55E]",
-    savings: "bg-[#8B5CF6]",
+    savings: "bg-[#6C5CFF]",
     goals: "bg-[#FACC15]",
     transport: "bg-[#FB923C]",
   };

@@ -16,7 +16,7 @@ import {
 import type { IconTone } from "@/components/ui/icon-box";
 
 const CATEGORY_PALETTE = [
-  "#8B5CF6",
+  "#6C5CFF",
   "#3B82F6",
   "#22C55E",
   "#F43F5E",
@@ -49,13 +49,13 @@ export function getCategoryStyle(name: string): CategoryStyle {
   if (/saude|health|farmacia|medico/.test(n))
     return { icon: HeartPulse, tone: "expense", color: "#F43F5E" };
   if (/compra|shopping|loja/.test(n))
-    return { icon: ShoppingCart, tone: "savings", color: "#8B5CF6" };
+    return { icon: ShoppingCart, tone: "savings", color: "#6C5CFF" };
   if (/viagem|passagem|hotel/.test(n))
     return { icon: Plane, tone: "invest", color: "#3B82F6" };
   if (/salario|renda|income|freelance/.test(n))
     return { icon: Briefcase, tone: "income", color: "#22C55E" };
   if (/poup|reserva|meta|emergencia/.test(n))
-    return { icon: PiggyBank, tone: "savings", color: "#8B5CF6" };
+    return { icon: PiggyBank, tone: "savings", color: "#6C5CFF" };
   if (/cartao|fatura|credito/.test(n))
     return { icon: CreditCard, tone: "expense", color: "#F43F5E" };
   if (/pix|debito|banco/.test(n))

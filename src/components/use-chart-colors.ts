@@ -15,7 +15,7 @@ export type ChartColors = {
 const DARK_DEFAULTS: ChartColors = {
   income: "#22c55e",
   expense: "#f43f5e",
-  invest: "#3b82f6",
+  invest: "#6c5cff",
   tick: "#7a8596",
   label: "#b4bdc9",
   grid: "#1e2636",

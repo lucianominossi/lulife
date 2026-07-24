@@ -37,10 +37,16 @@ import { addMonths, toNumber, yearMonthToLabel } from "@/lib/dates";
 import { deleteIncome, deleteTransaction } from "@/app/actions";
 import { DeleteButton } from "@/components/delete-button";
 import { getCategoryStyle } from "@/lib/category-style";
+import { MobileDashboardHero } from "@/components/mobile-dashboard-hero";
 
 function pctChange(current: number, previous: number): number | null {
   if (previous === 0) return current === 0 ? 0 : null;
   return ((current - previous) / Math.abs(previous)) * 100;
+}
+
+function firstName(name: string | null | undefined, email: string | null | undefined) {
+  const raw = (name || email || "aí").trim();
+  return raw.split(/\s+/)[0] || "aí";
 }
 
 export default function MonthPage({
@@ -234,7 +240,17 @@ async function MonthDashboard({
   return (
     <MonthDashboardFrame yearMonth={ym} meta={meta}>
       <div className="space-y-8">
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <MobileDashboardHero
+        firstName={firstName(user.name, user.email)}
+        saldo={health.atual}
+        income={health.totalIncome}
+        expenses={totalExpenses}
+        saldoSeries={trendData.map((d) => d.balance)}
+        incomeSeries={trendData.map((d) => d.income)}
+        expenseSeries={trendData.map((d) => d.expenses)}
+      />
+
+      <section className="hidden gap-4 sm:grid-cols-2 xl:grid-cols-4 lg:grid">
         <StatCard
           className="animate-fade-in animate-delay-1"
           label="Saldo atual"
@@ -244,6 +260,9 @@ async function MonthDashboard({
           icon={Wallet}
           iconTone="savings"
           changePct={pctChange(health.atual, prevHealth.atual)}
+          sparkline={trendData.map((d) => d.balance)}
+          sparklineColor="var(--accent)"
+          featured
         />
         <StatCard
           className="animate-fade-in animate-delay-2"
@@ -254,6 +273,8 @@ async function MonthDashboard({
           icon={TrendingUp}
           iconTone="income"
           changePct={pctChange(health.totalIncome, prevHealth.totalIncome)}
+          sparkline={trendData.map((d) => d.income)}
+          sparklineColor="var(--ok)"
         />
         <StatCard
           className="animate-fade-in animate-delay-3"
@@ -264,6 +285,8 @@ async function MonthDashboard({
           icon={CreditCard}
           iconTone="expense"
           changePct={pctChange(totalExpenses, prevExpenses)}
+          sparkline={trendData.map((d) => d.expenses)}
+          sparklineColor="var(--danger)"
         />
         <StatCard
           className="animate-fade-in animate-delay-4"
@@ -274,6 +297,8 @@ async function MonthDashboard({
           icon={PiggyBank}
           iconTone="invest"
           changePct={pctChange(health.projetado, prevHealth.projetado)}
+          sparkline={trendHealth.map((h) => h.projetado)}
+          sparklineColor="var(--chart-invest)"
         />
       </section>
 

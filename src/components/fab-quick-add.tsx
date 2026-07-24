@@ -24,10 +24,12 @@ export function FabQuickAdd({
   yearMonth,
   meta,
   inline = false,
+  dock = false,
 }: {
   yearMonth: string;
   meta: Meta;
   inline?: boolean;
+  dock?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"expense" | "income">("expense");
@@ -289,16 +291,16 @@ export function FabQuickAdd({
         >
           + Novo lançamento
         </button>
-      ) : (
+      ) : dock ? (
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--color-accent)] text-2xl text-[var(--on-accent)] shadow-lg shadow-[var(--btn-primary-shadow)] transition hover:bg-[var(--color-accent-hover)] lg:hidden"
-          aria-label="Adicionar"
+          className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--color-accent)] text-2xl text-[var(--on-accent)] shadow-lg shadow-[var(--btn-primary-shadow)] transition hover:bg-[var(--color-accent-hover)]"
+          aria-label="Novo lançamento"
         >
           +
         </button>
-      )}
+      ) : null}
       {modal}
       <SuccessToast message={toast} onClose={clearToast} />
     </>

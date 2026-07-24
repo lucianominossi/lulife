@@ -2,23 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   CalendarDays,
   CreditCard,
   LineChart,
   RefreshCw,
   Settings,
-  Menu,
-  X,
   Sparkles,
   ChevronRight,
   LogOut,
   Eye,
   EyeOff,
+  Target,
 } from "lucide-react";
 import { signOutAndInvalidate } from "@/app/actions/auth";
+import { BrandMark } from "@/components/brand-mark";
+import { BottomNav } from "@/components/bottom-nav";
 import { IconBox } from "@/components/ui/icon-box";
 import { PrivacyProvider, usePrivacy } from "@/components/privacy-provider";
 
@@ -42,6 +41,7 @@ const links = [
     match: "/recurring",
     icon: RefreshCw,
   },
+  { href: "/goals", label: "Metas", match: "/goals", icon: Target, soon: true },
   { href: "/settings", label: "Cadastros", match: "/settings", icon: Settings },
 ];
 
@@ -68,42 +68,9 @@ function PrivacyToggle({ compact }: { compact?: boolean }) {
     </button>
   );
 }
-function NavLinks({
-  onNavigate,
-  compact,
-}: {
-  onNavigate?: () => void;
-  compact?: boolean;
-}) {
-  const pathname = usePathname();
 
-  if (compact) {
-    return (
-      <ul className="flex gap-1 overflow-x-auto pb-1">
-        {links.map((link) => {
-          const active =
-            pathname === link.match || pathname.startsWith(`${link.match}/`);
-          const Icon = link.icon;
-          return (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                onClick={onNavigate}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition ${
-                  active
-                    ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
-                    : "text-[var(--color-ink-muted)] hover:bg-[var(--hover-fill)] hover:text-[var(--ink)]"
-                }`}
-              >
-                <Icon size={15} />
-                {link.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    );
-  }
+function NavLinks() {
+  const pathname = usePathname();
 
   return (
     <ul className="space-y-1">
@@ -115,7 +82,6 @@ function NavLinks({
           <li key={link.href}>
             <Link
               href={link.href}
-              onClick={onNavigate}
               className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition ${
                 active
                   ? "bg-[var(--accent-soft)] text-[var(--accent-ink)]"
@@ -130,7 +96,12 @@ function NavLinks({
                     : "text-[var(--color-sidebar-muted)] group-hover:text-[var(--color-sidebar-ink)]"
                 }
               />
-              {link.label}
+              <span className="flex-1">{link.label}</span>
+              {"soon" in link && link.soon && (
+                <span className="rounded-full bg-[var(--hover-fill)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-ink-subtle)]">
+                  Em breve
+                </span>
+              )}
             </Link>
           </li>
         );
@@ -224,24 +195,12 @@ export function AppShell({
   children: React.ReactNode;
   user?: { name?: string | null; email?: string | null };
 }) {
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   return (
     <PrivacyProvider>
       <div className="min-h-dvh lg:grid lg:grid-cols-[260px_1fr]">
         <aside className="sticky top-0 hidden h-dvh flex-col border-r border-[var(--border)] bg-[var(--color-sidebar)] px-4 py-6 text-[var(--color-sidebar-ink)] lg:flex">
-          <Link href="/month" className="mb-8 flex items-center gap-3 px-2">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-sm font-bold text-[var(--accent-ink)]">
-              L
-            </span>
-            <div>
-              <span className="block text-lg font-bold tracking-tight">
-                Lulife
-              </span>
-              <span className="block text-[11px] text-[var(--color-sidebar-muted)]">
-                Finanças pessoais
-              </span>
-            </div>
+          <Link href="/month" className="mb-8 px-2">
+            <BrandMark withWordmark size="md" subtitle="Finanças pessoais" />
           </Link>
 
           <nav className="flex-1 overflow-y-auto">
@@ -260,51 +219,20 @@ export function AppShell({
 
         <div className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--page-bg)]/80 backdrop-blur-xl lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-3">
-            <Link href="/month" className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-xs font-bold text-[var(--accent-ink)]">
-                L
-              </span>
-              <span className="text-lg font-bold tracking-tight">Lulife</span>
+            <Link href="/month">
+              <BrandMark withWordmark size="sm" />
             </Link>
-            <div className="flex items-center gap-1">
-              <PrivacyToggle compact />
-              <button
-                type="button"
-                onClick={() => setMobileOpen((v) => !v)}
-                className="btn-ghost flex h-11 w-11 items-center justify-center p-0"
-                aria-expanded={mobileOpen}
-                aria-label="Menu"
-              >
-                {mobileOpen ? <X size={26} strokeWidth={2.25} /> : <Menu size={26} strokeWidth={2.25} />}
-              </button>
-            </div>
+            <PrivacyToggle compact />
           </div>
-          <AnimatePresence>
-            {mobileOpen && (
-              <motion.nav
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden border-t border-[var(--border)] px-3 py-3"
-              >
-                <NavLinks onNavigate={() => setMobileOpen(false)} compact />
-                <div className="mt-3 px-1">
-                  <UserAvatar
-                    name={user?.name}
-                    email={user?.email ?? undefined}
-                  />
-                </div>
-              </motion.nav>
-            )}
-          </AnimatePresence>
         </div>
 
-        <main className="min-w-0 overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="min-w-0 overflow-x-hidden px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
           <div className="animate-fade-in mx-auto w-full min-w-0 max-w-[1280px]">
             {children}
           </div>
         </main>
+
+        <BottomNav />
       </div>
     </PrivacyProvider>
   );

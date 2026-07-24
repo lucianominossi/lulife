@@ -45,7 +45,7 @@ export function MonthDashboardFrame({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="hidden flex-wrap items-end justify-between gap-4 lg:flex">
         <div>
           <h1 className="text-[32px] font-bold leading-tight tracking-tight">
             Dashboard
@@ -87,9 +87,34 @@ export function MonthDashboardFrame({
         </div>
       </div>
 
-      {isPending ? <DashboardShimmer /> : children}
+      {/* Mobile month switcher */}
+      <div className="flex items-center justify-between gap-2 lg:hidden">
+        <div className="flex items-center gap-1 rounded-xl border border-[var(--border-strong)] bg-[var(--surface)] p-1">
+          <button
+            type="button"
+            aria-label="Mês anterior"
+            disabled={isPending}
+            onClick={() => go(-1)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)]"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="min-w-[72px] px-2 text-center text-sm font-semibold tabular-nums">
+            {yearMonthToLabel(activeYm)}
+          </span>
+          <button
+            type="button"
+            aria-label="Próximo mês"
+            disabled={isPending}
+            onClick={() => go(1)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--color-ink-muted)]"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      </div>
 
-      {!isPending && <FabQuickAdd yearMonth={activeYm} meta={meta} />}
+      {isPending ? <DashboardShimmer /> : children}
     </div>
   );
 }

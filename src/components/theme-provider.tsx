@@ -68,7 +68,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute("content", next === "dark" ? "#0B0F17" : "#F8F9FC");
+      meta.setAttribute("content", next === "dark" ? "#0F172A" : "#F3F4F6");
     }
   }, []);
 
@@ -83,7 +83,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       }
       const meta = document.querySelector('meta[name="theme-color"]');
       if (meta) {
-        meta.setAttribute("content", next === "dark" ? "#0B0F17" : "#F8F9FC");
+        meta.setAttribute("content", next === "dark" ? "#0F172A" : "#F3F4F6");
       }
       return next;
     });
